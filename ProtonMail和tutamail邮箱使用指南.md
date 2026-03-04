@@ -1,4 +1,4 @@
-一、Proton Mail 精简指南
+### 一、Proton Mail 精简指南
 
 核心亮点
 - 瑞士隐私、全端到端加密
