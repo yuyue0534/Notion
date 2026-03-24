@@ -1,3 +1,4 @@
+```
 yAxis: {
   type: 'value',
   min: value => {
@@ -26,3 +27,33 @@ yAxis: {
     }
   }
 },
+```
+
+---
+
+```
+#netconnode {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+#netconnode:checked {
+  background-color: #4A90E2;
+  border-color: #4A90E2;
+}
+
+#netconnode:checked::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: 2px solid #fff; /* 勾的颜色 */
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translate(2px, -1px);
+}
+```
