@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fund Selector</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+
+  <style>
+    :root {
+      --primary: #FF9400;
+      --btn: #1D3354;
+      --bg: #f6f7f9;
+      --border: #dcdfe6;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+    }
+
+    header {
+      color: var(--primary);
+      background: #fff;
+      padding: 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .container {
+      padding: 11px;
+      padding-bottom: 60px;
+    }
+
+    /* ===== Filter Card ===== */
+    .filter {
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,.05), 0 4px 8px rgba(0,0,0,.07);
+      transition: box-shadow .3s ease;
+    }
+    .filter:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,.08), 0 8px 16px rgba(0,0,0,.1);
+    }
+
+    .filter-group {
+      margin: 5px 2px;
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      align-items: center;
+    }
+    .filter-group > label {
+      font-size: 13px;
+      color: #333;
+      padding-right: 11px;
+      line-height: 34px;
+    }
+
+    /* ===== Slider ===== */
+    .slider { margin: 10px 0; }
+    .slider-value { font-size: 12px; color: #666; }
+
+    .compact-slider .noUi-target { height: 6px; border-radius: 3px; }
+    .compact-slider .noUi-connect { background: var(--primary); }
+    .compact-slider .noUi-handle {
+      width: 18px; height: 18px;
+      right: -7px; top: -7px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+      cursor: pointer;
+    }
+    .compact-slider .noUi-handle::before,
+    .compact-slider .noUi-handle::after { display: none; }
+    .compact-slider .noUi-touch-area { background: var(--primary); border-radius: 50%; }
+
+    /* ===== Table ===== */
+    table { width: 100%; border-collapse: collapse; background: #fff; overflow: hidden; }
+    th, td { padding: 8px; font-size: 13px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background: var(--primary); color: #fff; font-weight: 600; }
+    #tableBody > tr:nth-child(2n+1) { background: #FFF5E8; }
+    #tableBody > tr { transition: background .15s; }
+    #tableBody > tr:hover { background: #FFE4C4 !important; }
+
+    /* ===== Pagination ===== */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .pagination button {
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      background: #eee;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background .2s;
+    }
+    .pagination button:hover:not(:disabled) { background: #ddd; }
+    .pagination button:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+    #pageInfo { font-size: 13px; color: #666; min-width: 80px; text-align: center; }
+
+    /* ===== Fixed Bar ===== */
+    .fixed-bar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+    .fixed-bar span { font-size: 13px; color: #555; }
+    .fixed-bar button {
+      background: var(--btn);
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 18px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: opacity .2s;
+    }
+    .fixed-bar button:hover { opacity: .85; }
+
+    /* ===== Compare Page ===== */
+    .hidden { display: none; }
+
+    .compare-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .back {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1.4;
+      color: #333;
+    }
+    .back:hover { background: #f0f0f0; }
+
+    .compare-table th,
+    .compare-table td { text-align: center; }
+    .compare-table td:first-child { text-align: left; font-weight: 500; color: #555; }
+
+    /* ===== Risk Badges ===== */
+    .risk-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* ===== MultiSelect ===== */
+    .multi-select { position: relative; }
+
+    .select-input {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 32px 5px 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      cursor: pointer;
+      min-height: 34px;
+      background: #fff;
+      transition: border-color .2s;
+    }
+    .select-input:hover { border-color: var(--primary); }
+
+    .placeholder { color: #a8abb2; font-size: 13px; line-height: 22px; }
+
+    .tag {
+      background: var(--btn);
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .tag .tag-remove {
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      opacity: .7;
+    }
+    .tag .tag-remove:hover { opacity: 1; }
+
+    .clear-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #c0c4cc;
+      font-size: 14px;
+      display: none;
+      line-height: 1;
+    }
+    .clear-btn:hover { color: #888; }
+
+    .multi-select .dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      width: 100%;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      border: 1px solid var(--border);
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+      z-index: 200;
+    }
+    .multi-select .dropdown.open { display: block; }
+
+    .multi-select .option {
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .multi-select .option:hover { background: #f5f7fa; }
+    .multi-select .option input { cursor: pointer; accent-color: var(--primary); }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header>Fund Selector</header>
+
+<!-- ===== List Page ===== -->
+<div class="container" id="listPage">
+
+  <div class="filter">
+    <div class="filter-group">
+      <label>Fund Type</label>
+      <div id="fundtypes"></div>
+    </div>
+    <div class="filter-group">
+      <label>Country / Region</label>
+      <div id="region1"></div>
+    </div>
+    <div class="filter-group">
+      <label>Return Rate (%)</label>
+      <div class="compact-slider">
+        <div id="returnSlider" class="slider"></div>
+        <div class="slider-value" id="returnText"></div>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Risk Level</label>
+      <div class="compact-slider">
+        <div id="riskSlider" class="slider"></div>
+        <div class="slider-value" id="riskText"></div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:36px"></th>
+        <th>Fund</th>
+        <th>Return (1Y)</th>
+        <th>Risk</th>
+        <th>Expense</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div id="emptyState" class="empty-state hidden">No funds match the current filters.</div>
+
+  <div class="pagination">
+    <button id="prevBtn" onclick="App.prevPage()">← Prev</button>
+    <span id="pageInfo"></span>
+    <button id="nextBtn" onclick="App.nextPage()">Next →</button>
+  </div>
+</div>
+
+<!-- ===== Compare Page ===== -->
+<div class="container hidden" id="comparePage">
+  <div class="compare-header">
+    <button class="back" onclick="App.backToList()" aria-label="Back to fund list">&#8592;</button>
+    <strong>Fund Comparison</strong>
+  </div>
+  <table class="compare-table">
+    <thead>
+      <tr id="compareHeader"></tr>
+    </thead>
+    <tbody id="compareBody"></tbody>
+  </table>
+</div>
+
+<!-- ===== Fixed Bar ===== -->
+<div class="fixed-bar" id="fixedBar">
+  <span id="selectedCount">0 / 5 Selected</span>
+  <button onclick="App.goCompare()">Compare</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─────────────────────────────────────────
+     Utility
+  ───────────────────────────────────────── */
+  function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // FIX: risk colors as data — easier to maintain, no repeating CSS
+  const RISK_COLORS = {
+    1: '#07A33C',
+    2: '#31C37F',
+    3: '#8DC63F',
+    4: '#F7C948',
+    5: '#F9AE1A',
+    6: '#EF672E',
+    7: '#C91B1C',
+  };
+
+  function riskBadge(level) {
+    const color = RISK_COLORS[level] || '#aaa';
+    return `<span class="risk-badge" style="background:${color}">${level}</span>`;
+  }
+
+  /* ─────────────────────────────────────────
+     MultiSelect Component
+  ───────────────────────────────────────── */
+  class MultiSelect {
+    constructor(el, options) {
+      this.container = document.querySelector(el);
+      this.opts = options;
+      this.selected = new Set();
+      this._render();
+      this._bind();
+    }
+
+    _render() {
+      this.container.innerHTML = `
+        <div class="multi-select">
+          <div class="select-input" role="combobox" aria-expanded="false" aria-haspopup="listbox" tabindex="0">
+            <span class="placeholder">${escHtml(this.opts.placeholder)}</span>
+          </div>
+          <span class="clear-btn" aria-label="Clear selection">&#10005;</span>
+          <div class="dropdown" role="listbox" aria-multiselectable="true"></div>
+        </div>`;
+
+      this.ms       = this.container.querySelector('.multi-select');
+      this.input    = this.container.querySelector('.select-input');
+      this.clearBtn = this.container.querySelector('.clear-btn');
+      this.dropdown = this.container.querySelector('.dropdown');
+
+      this.opts.options.forEach(opt => {
+        const label = document.createElement('label');
+        label.className = 'option';
+        label.setAttribute('role', 'option');
+        label.setAttribute('aria-selected', 'false');
+        label.innerHTML = `<input type="checkbox" value="${escHtml(opt.value)}"> ${escHtml(opt.label)}`;
+        this.dropdown.appendChild(label);
+      });
+    }
+
+    _bind() {
+      // Toggle dropdown
+      this.input.addEventListener('click', () => this._toggleDropdown());
+      this.input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._toggleDropdown(); }
+        if (e.key === 'Escape') this._close();
+      });
+
+      // FIX: event delegation — one listener instead of N
+      this.dropdown.addEventListener('change', e => {
+        if (e.target.type === 'checkbox') this._update();
+      });
+
+      // Clear button
+      this.clearBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        this.dropdown.querySelectorAll('input').forEach(i => { i.checked = false; });
+        this._update();
+      });
+
+      // Close on outside click
+      document.addEventListener('click', e => {
+        if (!this.ms.contains(e.target)) this._close();
+      });
+    }
+
+    _toggleDropdown() {
+      const isOpen = this.dropdown.classList.toggle('open');
+      this.input.setAttribute('aria-expanded', isOpen);
+    }
+
+    _close() {
+      this.dropdown.classList.remove('open');
+      this.input.setAttribute('aria-expanded', 'false');
+    }
+
+    _update() {
+      const checked = [...this.dropdown.querySelectorAll('input:checked')];
+      this.selected = new Set(checked.map(c => c.value));
+
+      // Sync aria-selected on options
+      this.dropdown.querySelectorAll('label.option').forEach(lbl => {
+        const cb = lbl.querySelector('input');
+        lbl.setAttribute('aria-selected', cb.checked ? 'true' : 'false');
+      });
+
+      // Rebuild input tags
+      this.input.innerHTML = '';
+      if (!checked.length) {
+        const ph = document.createElement('span');
+        ph.className = 'placeholder';
+        ph.textContent = this.opts.placeholder;
+        this.input.appendChild(ph);
+        this.clearBtn.style.display = 'none';
+      } else {
+        this.clearBtn.style.display = 'block';
+        checked.forEach(cb => {
+          const tag = document.createElement('div');
+          tag.className = 'tag';
+          tag.innerHTML = `${escHtml(cb.value)}<span class="tag-remove" aria-label="Remove ${escHtml(cb.value)}">&#10005;</span>`;
+          tag.querySelector('.tag-remove').addEventListener('click', e => {
+            e.stopPropagation();
+            cb.checked = false;
+            this._update();
+          });
+          this.input.appendChild(tag);
+        });
+      }
+
+      this.opts.onChange?.(this.getValues());
+    }
+
+    getValues() {
+      return [...this.selected];
+    }
+  }
+
+  /* ─────────────────────────────────────────
+     Data
+  ───────────────────────────────────────── */
+  const FUND_NAMES = [
+    'Age 65 Plus Fund', 'American Fund', 'Asian Bond Fund', 'Asian Equity Fund',
+    'Balanced Portfolio', 'Capital Stable Portfolio', 'China HK Dynamic Asset Allocation Fund',
+    'Core Accumulation Fund', 'Eurasia Fund', 'European Equity Fund', 'Global Bond Fund',
+    'Greater China Equity Fund', 'Green Fund', 'Growth Portfolio', 'Guaranteed Portfolio',
+    'Hong Kong and China Fund', "Manager's Choice Fund"
+  ];
+
+  const FUND_TYPES = [
+    'Equity Fund', 'Mixed Assets Fund', 'Bond Fund', 'Guaranteed Fund',
+    'Money Market Fund - MPF Conservative Fund',
+    'Money Market Fund - Other than MPF Conservative Fund'
+  ];
+
+  const REGIONS = [
+    'Europe', 'US', 'China', 'Japan', 'UK', 'Germany', 'France',
+    'Canada', 'Australia', 'India', 'Brazil', 'Singapore'
+  ];
+
+  // FIX: use unique string id (code) as identifier to avoid index mismatch
+  // FIX: risk range is 1-7 — Math.floor(Math.random()*7)+1
+  const funds = Array.from({ length: 300 }, (_, i) => ({
+    id: `GEF${1000 + i}`,
+    name: FUND_NAMES[i % FUND_NAMES.length],
+    type: FUND_TYPES[i % FUND_TYPES.length],
+    region: REGIONS[i % REGIONS.length],
+    return: +(Math.random() * 30 - 10).toFixed(2),   // -10% ~ +20%
+    risk: Math.floor(Math.random() * 7) + 1,          // 1 ~ 7
+    expense: +(Math.random() * 1.2 + 0.3).toFixed(2)
+  }));
+
+  /* ─────────────────────────────────────────
+     State
+  ───────────────────────────────────────── */
+  const PAGE_SIZE = 20;
+  let state = {
+    page: 1,
+    selected: new Set(),   // FIX: Set of string ids
+    retRange: [-10, 20],
+    riskRange: [1, 7],
+    typeFilter: [],
+    regionFilter: [],
+  };
+
+  /* ─────────────────────────────────────────
+     Filter Logic
+  ───────────────────────────────────────── */
+  function filtered() {
+    return funds.filter(f => {
+      if (f.return < state.retRange[0] || f.return > state.retRange[1]) return false;
+      if (f.risk   < state.riskRange[0] || f.risk   > state.riskRange[1]) return false;
+      // FIX: actually apply type / region filters
+      if (state.typeFilter.length   && !state.typeFilter.includes(f.type))     return false;
+      if (state.regionFilter.length && !state.regionFilter.includes(f.region)) return false;
+      return true;
+    });
+  }
+
+  /* ─────────────────────────────────────────
+     Render
+  ───────────────────────────────────────── */
+  function render() {
+    // FIX: cache filtered result — only compute once per render
+    const list  = filtered();
+    const total = list.length;
+    const start = (state.page - 1) * PAGE_SIZE;
+    const page  = list.slice(start, start + PAGE_SIZE);
+
+    const tbody       = document.getElementById('tableBody');
+    const emptyState  = document.getElementById('emptyState');
+    const pageInfo    = document.getElementById('pageInfo');
+    const prevBtn     = document.getElementById('prevBtn');
+    const nextBtn     = document.getElementById('nextBtn');
+    const selCount    = document.getElementById('selectedCount');
+
+    if (!page.length) {
+      tbody.innerHTML = '';
+      emptyState.classList.remove('hidden');
+    } else {
+      emptyState.classList.add('hidden');
+      // FIX: escHtml applied to fund name to prevent XSS
+      tbody.innerHTML = page.map(f => `
+        <tr>
+          <td>
+            <input type="checkbox"
+              aria-label="Select ${escHtml(f.name)}"
+              ${state.selected.has(f.id) ? 'checked' : ''}
+              ${!state.selected.has(f.id) && state.selected.size >= 5 ? 'disabled' : ''}
+              onchange="App.toggle('${f.id}')">
+          </td>
+          <td>${escHtml(f.name)}<br><span style="color:#aaa;font-size:11px">${escHtml(f.id)}</span></td>
+          <td style="color:${f.return >= 0 ? '#07A33C' : '#C91B1C'};font-weight:500">${f.return >= 0 ? '+' : ''}${f.return}%</td>
+          <td>${riskBadge(f.risk)}</td>
+          <td>${f.expense}%</td>
+        </tr>`).join('');
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    pageInfo.textContent = `Page ${state.page} / ${totalPages}  (${total} funds)`;
+
+    // FIX: disable pagination buttons at boundaries
+    prevBtn.disabled = state.page <= 1;
+    nextBtn.disabled = state.page >= totalPages;
+
+    selCount.textContent = `${state.selected.size} / 5 Selected`;
+  }
+
+  /* ─────────────────────────────────────────
+     App Actions (exposed to inline handlers)
+  ───────────────────────────────────────── */
+  window.App = {
+    toggle(id) {
+      if (state.selected.has(id)) {
+        state.selected.delete(id);
+      } else if (state.selected.size < 5) {
+        state.selected.add(id);
+      }
+      render();
+    },
+
+    prevPage() {
+      if (state.page > 1) { state.page--; render(); }
+    },
+
+    nextPage() {
+      const total = filtered().length;
+      if (state.page * PAGE_SIZE < total) { state.page++; render(); }
+    },
+
+    goCompare() {
+      if (!state.selected.size) {
+        alert('Please select at least one fund to compare.');
+        return;
+      }
+      const fs = funds.filter(f => state.selected.has(f.id));
+
+      document.getElementById('listPage').classList.add('hidden');
+      document.getElementById('fixedBar').classList.add('hidden');
+      document.getElementById('comparePage').classList.remove('hidden');
+
+      // FIX: dynamic header — only as many columns as selected funds
+      const headerRow = document.getElementById('compareHeader');
+      headerRow.innerHTML = '<th>Metric</th>' +
+        fs.map(f => `<th style="font-size:12px">${escHtml(f.name)}<br><span style="color:#aaa;font-weight:400">${escHtml(f.id)}</span></th>`).join('');
+
+      const metrics = [
+        { label: 'Return (1Y)', fn: f => `<span style="color:${f.return >= 0 ? '#07A33C' : '#C91B1C'};font-weight:500">${f.return >= 0 ? '+' : ''}${f.return}%</span>` },
+        { label: 'Risk Level',  fn: f => riskBadge(f.risk) },
+        { label: 'Expense',     fn: f => `${f.expense}%` },
+        { label: 'Type',        fn: f => `<span style="font-size:12px">${escHtml(f.type)}</span>` },
+        { label: 'Region',      fn: f => escHtml(f.region) },
+      ];
+
+      document.getElementById('compareBody').innerHTML = metrics.map(m =>
+        `<tr><td>${m.label}</td>${fs.map(f => `<td>${m.fn(f)}</td>`).join('')}</tr>`
+      ).join('');
+    },
+
+    backToList() {
+      document.getElementById('comparePage').classList.add('hidden');
+      document.getElementById('listPage').classList.remove('hidden');
+      document.getElementById('fixedBar').classList.remove('hidden');
+    }
+  };
+
+  /* ─────────────────────────────────────────
+     Sliders
+  ───────────────────────────────────────── */
+  const returnSlider = document.getElementById('returnSlider');
+  const riskSlider   = document.getElementById('riskSlider');
+  const returnText   = document.getElementById('returnText');
+  const riskText     = document.getElementById('riskText');
+
+  noUiSlider.create(returnSlider, {
+    start: [-10, 20],
+    connect: true,
+    range: { min: -10, max: 20 },
+    step: 0.5,
+  });
+
+  noUiSlider.create(riskSlider, {
+    start: [1, 7],
+    step: 1,
+    connect: true,
+    range: { min: 1, max: 7 },
+  });
+
+  // FIX: 'update' only refreshes the label (lightweight)
+  //       'set' / 'end' triggers full re-render (after drag ends)
+  returnSlider.noUiSlider.on('update', v => {
+    state.retRange = v.map(Number);
+    returnText.textContent = `${state.retRange[0].toFixed(1)}% ~ ${state.retRange[1].toFixed(1)}%`;
+  });
+  returnSlider.noUiSlider.on('set', () => {
+    state.page = 1; render();
+  });
+
+  riskSlider.noUiSlider.on('update', v => {
+    state.riskRange = v.map(Number);
+    riskText.textContent = `Level ${state.riskRange[0]} ~ ${state.riskRange[1]}`;
+  });
+  riskSlider.noUiSlider.on('set', () => {
+    state.page = 1; render();
+  });
+
+  /* ─────────────────────────────────────────
+     MultiSelect Init
+  ───────────────────────────────────────── */
+  // FIX: onChange now updates state and re-renders
+  new MultiSelect('#fundtypes', {
+    placeholder: 'All types',
+    options: FUND_TYPES.map(t => ({ label: t, value: t })),
+    onChange: v => { state.typeFilter = v; state.page = 1; render(); }
+  });
+
+  new MultiSelect('#region1', {
+    placeholder: 'All regions',
+    options: REGIONS.map(r => ({ label: r, value: r })),
+    onChange: v => { state.regionFilter = v; state.page = 1; render(); }
+  });
+
+  /* ─────────────────────────────────────────
+     Boot
+  ───────────────────────────────────────── */
+  render();
+
+})(); // IIFE — no global namespace pollution
+</script>
+</body>
+</html>
