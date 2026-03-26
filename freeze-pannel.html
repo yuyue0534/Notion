@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>固定首行首列 Table（动态渲染版）</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f5f7fb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      color: #333;
+    }
+
+    .page {
+      padding: 12px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1f2937;
+    }
+
+    .desc {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      border: 0;
+      background: #2563eb;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #64748b;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e7eb;
+    }
+
+    .table-wrap {
+      width: 100%;
+      max-width: 100vw;
+      height: 72vh;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #fff;
+    }
+
+    .compare-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 1120px;
+      table-layout: fixed;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .compare-table th,
+    .compare-table td {
+      min-width: 110px;
+      height: 44px;
+      padding: 10px 12px;
+      white-space: nowrap;
+      border-right: 1px solid #eaecef;
+      border-bottom: 1px solid #eaecef;
+      background: #fff;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .compare-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #f8fafc;
+      font-weight: 700;
+      color: #111827;
+      box-shadow: 0 1px 0 #e5e7eb;
+    }
+
+    .compare-table .first-col {
+      position: sticky;
+      left: 0;
+      z-index: 10;
+      min-width: 140px;
+      background: #fff;
+      text-align: left;
+      font-weight: 600;
+      color: #111827;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .compare-table .corner {
+      position: sticky;
+      top: 0;
+      left: 0;
+      z-index: 30;
+      min-width: 140px;
+      background: #f8fafc;
+      text-align: left;
+      font-weight: 700;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .compare-table tbody tr:nth-child(even) td {
+      background: #fcfcfd;
+    }
+
+    .compare-table tbody tr:nth-child(even) .first-col {
+      background: #fcfcfd;
+    }
+
+    .compare-table tbody tr:hover td {
+      background: #f9fbff;
+    }
+
+    .compare-table tbody tr:hover .first-col {
+      background: #f9fbff;
+    }
+
+    .footer-tip {
+      font-size: 12px;
+      color: #6b7280;
+      padding: 10px 12px 14px;
+      line-height: 1.6;
+      border-top: 1px solid #f1f3f5;
+      background: #fff;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="title">固定首行 + 首列 Table（动态渲染版）</div>
+    <div class="desc">
+      这版不是把表格写死在 HTML 里，而是通过 JS 动态渲染。<br />
+      你后面只需要替换 <code>tableData.columns</code> 和 <code>tableData.rows</code> 即可。
+    </div>
+
+    <div class="toolbar">
+      <button class="btn" id="renderBtn">重新渲染当前数据</button>
+      <button class="btn secondary" id="mockBtn">切换一组新数据</button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table class="compare-table" id="compareTable"></table>
+      </div>
+      <div class="footer-tip">
+        核心思路：JS 动态拼接 <code>thead</code> + <code>tbody</code>；
+        首行和首列继续使用 <code>position: sticky</code> 固定。
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // 1) 数据源：你以后主要改这里
+    // =========================
+    let tableData = {
+      firstColumnTitle: "参数项",
+      columns: [
+        "车型A", "车型B", "车型C", "车型D", "车型E",
+        "车型F", "车型G", "车型H", "车型I"
+      ],
+      rows: [
+        { label: "厂商指导价", values: ["12.98万", "13.58万", "14.28万", "15.18万", "16.28万", "17.18万", "18.08万", "19.38万", "20.68万"] },
+        { label: "能源类型", values: ["汽油", "汽油", "混动", "混动", "纯电", "纯电", "汽油", "混动", "纯电"] },
+        { label: "发动机", values: ["1.5T", "1.5T", "1.5L", "1.5L", "-", "-", "2.0T", "2.0L", "-"] },
+        { label: "变速箱", values: ["7DCT", "7DCT", "E-CVT", "E-CVT", "单速", "单速", "8AT", "E-CVT", "单速"] },
+        { label: "最大功率", values: ["135kW", "138kW", "112kW", "118kW", "150kW", "165kW", "180kW", "145kW", "200kW"] },
+        { label: "最大扭矩", values: ["290N·m", "300N·m", "210N·m", "230N·m", "310N·m", "340N·m", "390N·m", "260N·m", "420N·m"] },
+        { label: "0-100km/h加速", values: ["8.9s", "8.5s", "8.2s", "7.9s", "7.5s", "6.9s", "6.8s", "7.6s", "6.2s"] },
+        { label: "长(mm)", values: ["4680", "4705", "4720", "4750", "4780", "4810", "4835", "4760", "4860"] },
+        { label: "宽(mm)", values: ["1820", "1835", "1840", "1855", "1860", "1870", "1885", "1848", "1890"] },
+        { label: "高(mm)", values: ["1450", "1460", "1458", "1470", "1490", "1500", "1468", "1475", "1510"] },
+        { label: "轴距(mm)", values: ["2710", "2735", "2760", "2780", "2810", "2835", "2850", "2795", "2880"] },
+        { label: "车身结构", values: ["三厢车", "三厢车", "SUV", "SUV", "SUV", "轿跑SUV", "中型轿车", "SUV", "中大型SUV"] },
+        { label: "驱动方式", values: ["前驱", "前驱", "前驱", "前驱", "后驱", "四驱", "四驱", "前驱", "四驱"] },
+        { label: "前悬架", values: ["麦弗逊", "麦弗逊", "麦弗逊", "麦弗逊", "双叉臂", "双叉臂", "双叉臂", "麦弗逊", "双叉臂"] },
+        { label: "后悬架", values: ["多连杆", "多连杆", "多连杆", "多连杆", "多连杆", "多连杆", "多连杆", "多连杆", "空气悬架"] },
+        { label: "前轮胎规格", values: ["215/55 R17", "225/50 R17", "225/55 R18", "235/50 R18", "235/45 R19", "245/45 R19", "245/40 R20", "235/50 R18", "255/45 R20"] },
+        { label: "后轮胎规格", values: ["215/55 R17", "225/50 R17", "225/55 R18", "235/50 R18", "235/45 R19", "245/45 R19", "245/40 R20", "235/50 R18", "255/45 R20"] },
+        { label: "主驾安全气囊", values: ["标配", "标配", "标配", "标配", "标配", "标配", "标配", "标配", "标配"] },
+        { label: "车道偏离预警", values: ["-", "标配", "标配", "标配", "标配", "标配", "标配", "标配", "标配"] },
+        { label: "主动刹车", values: ["-", "选配", "标配", "标配", "标配", "标配", "标配", "标配", "标配"] },
+        { label: "全速自适应巡航", values: ["-", "-", "选配", "标配", "标配", "标配", "标配", "选配", "标配"] },
+        { label: "L2辅助驾驶", values: ["-", "-", "选配", "标配", "标配", "标配", "标配", "选配", "标配"] },
+        { label: "天窗类型", values: ["单天窗", "全景天窗", "全景天窗", "可开启全景", "不可开启全景", "可开启全景", "分段式天幕", "全景天窗", "全景天幕"] },
+        { label: "中控屏尺寸", values: ["10.25英寸", "12.3英寸", "12.3英寸", "14.6英寸", "15.6英寸", "15.6英寸", "16.1英寸", "14.8英寸", "17.0英寸"] },
+        { label: "车机系统", values: ["基础版", "智能版", "智能版", "高阶版", "高阶版", "高阶版", "旗舰版", "高阶版", "旗舰版"] },
+        { label: "语音助手", values: ["支持", "支持", "支持", "支持", "支持", "支持", "支持", "支持", "支持"] },
+        { label: "手机互联", values: ["CarPlay", "CarPlay", "CarPlay/HiCar", "CarPlay/HiCar", "无线互联", "无线互联", "无线互联", "CarPlay/HiCar", "无线互联"] },
+        { label: "座椅材质", values: ["织物", "仿皮", "仿皮", "真皮", "真皮", "真皮", "Nappa", "仿皮", "Nappa"] },
+        { label: "前排座椅加热", values: ["-", "-", "选配", "标配", "标配", "标配", "标配", "选配", "标配"] },
+        { label: "空调控制方式", values: ["手动", "自动", "自动", "自动", "自动", "自动", "三区自动", "自动", "四区自动"] }
+      ]
+    };
+
+    // =========================
+    // 2) 工具函数
+    // =========================
+    function escapeHtml(value) {
+      if (value === null || value === undefined) return "";
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function normalizeRowValues(values, targetLength) {
+      const safeValues = Array.isArray(values) ? values.slice(0, targetLength) : [];
+      while (safeValues.length < targetLength) {
+        safeValues.push("-");
+      }
+      return safeValues;
+    }
+
+    // =========================
+    // 3) 渲染函数
+    // =========================
+    function renderCompareTable(containerId, data) {
+      const tableEl = document.getElementById(containerId);
+      if (!tableEl) return;
+
+      const columns = Array.isArray(data.columns) ? data.columns : [];
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      const firstColumnTitle = data.firstColumnTitle || "参数项";
+
+      const theadHtml = `
+        <thead>
+          <tr>
+            <th class="corner">${escapeHtml(firstColumnTitle)}</th>
+            ${columns.map(col => `<th>${escapeHtml(col)}</th>`).join("")}
+          </tr>
+        </thead>
+      `;
+
+      const tbodyHtml = `
+        <tbody>
+          ${rows.map(row => {
+            const values = normalizeRowValues(row.values, columns.length);
+            return `
+              <tr>
+                <td class="first-col">${escapeHtml(row.label)}</td>
+                ${values.map(val => `<td>${escapeHtml(val)}</td>`).join("")}
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      `;
+
+      tableEl.innerHTML = theadHtml + tbodyHtml;
+    }
+
+    // =========================
+    // 4) 初始化渲染
+    // =========================
+    renderCompareTable("compareTable", tableData);
+
+    // =========================
+    // 5) 示例：重新渲染
+    // =========================
+    document.getElementById("renderBtn").addEventListener("click", function () {
+      renderCompareTable("compareTable", tableData);
+    });
+
+    // =========================
+    // 6) 示例：切换一组新数据
+    // =========================
+    document.getElementById("mockBtn").addEventListener("click", function () {
+      tableData = {
+        firstColumnTitle: "配置项",
+        columns: ["版本1", "版本2", "版本3", "版本4", "版本5", "版本6", "版本7", "版本8", "版本9"],
+        rows: [
+          { label: "售价", values: ["1999", "2299", "2599", "2799", "2999", "3299", "3599", "3999", "4299"] },
+          { label: "屏幕尺寸", values: ["6.1英寸", "6.3英寸", "6.4英寸", "6.5英寸", "6.6英寸", "6.7英寸", "6.78英寸", "6.8英寸", "6.82英寸"] },
+          { label: "处理器", values: ["A1", "A2", "A2", "A3", "A3", "A4", "A4", "A5", "A5"] },
+          { label: "运行内存", values: ["8GB", "8GB", "12GB", "12GB", "12GB", "16GB", "16GB", "16GB", "18GB"] },
+          { label: "存储容量", values: ["128GB", "256GB", "256GB", "256GB", "512GB", "512GB", "512GB", "1TB", "1TB"] },
+          { label: "电池", values: ["4500mAh", "4700mAh", "4800mAh", "5000mAh", "5000mAh", "5200mAh", "5300mAh", "5500mAh", "5600mAh"] },
+          { label: "快充", values: ["33W", "45W", "45W", "67W", "67W", "80W", "100W", "120W", "120W"] },
+          { label: "无线充电", values: ["-", "-", "支持", "支持", "支持", "支持", "支持", "支持", "支持"] },
+          { label: "主摄", values: ["5000万", "5000万", "6400万", "6400万", "5000万", "5000万", "1亿", "1亿", "1亿"] },
+          { label: "防水等级", values: ["IP53", "IP54", "IP54", "IP68", "IP68", "IP68", "IP68", "IP68", "IP68"] },
+          { label: "系统", values: ["OS 1", "OS 1", "OS 2", "OS 2", "OS 2", "OS 3", "OS 3", "OS 3", "OS 3"] }
+        ]
+      };
+
+      renderCompareTable("compareTable", tableData);
+    });
+
+    // =========================
+    // 7) 你实际接接口时可以这样用
+    // =========================
+    /*
+    fetch('/api/table-data')
+      .then(res => res.json())
+      .then(data => {
+        renderCompareTable('compareTable', data);
+      });
+    */
+  </script>
+</body>
+</html>
