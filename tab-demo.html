@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tab 切换 Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部 Tab 栏 ── */
+  .tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #e8e8e8;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 0 0;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .tab-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #999;
+    letter-spacing: .5px;
+    transition: color .22s;
+    padding-bottom: 11px;
+  }
+
+  /* 下划线条 */
+  .tab-underline {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 28px;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: #111;
+    transform-origin: center;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .22s;
+  }
+
+  /* 激活态 */
+  .tab-item.active .tab-label   { color: #111; }
+  .tab-item.active .tab-underline { transform: translateX(-50%) scaleX(1); }
+
+  /* 点击水波 */
+  .tab-item:active .tab-label { opacity: .65; }
+
+  /* ── 页面内容 ── */
+  .tab-panels { overflow: hidden; }
+
+  .tab-panel {
+    display: none;
+    animation: fadeUp .28s ease both;
+  }
+  .tab-panel.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── 示例子页面样式（替换成你自己的内容即可）── */
+  .demo-page {
+    padding: 20px 16px;
+  }
+  .demo-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  .demo-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; color: #111; }
+  .demo-card p  { font-size: 14px; color: #666; line-height: 1.7; }
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+  .tag-a { background: #f0f0f0; color: #333; }
+  .tag-b { background: #fff3e0; color: #e65100; }
+  .tag-c { background: #e8f5e9; color: #2e7d32; }
+</style>
+</head>
+<body>
+
+<!-- ════════ Tab 栏 ════════ -->
+<div class="tab-bar" id="tabBar">
+  <div class="tab-item active" data-tab="0">
+    <span class="tab-label">推荐</span>
+    <span class="tab-underline"></span>
+  </div>
+  <div class="tab-item" data-tab="1">
+    <span class="tab-label">热榜</span>
+    <span class="tab-underline"></span>
+  </div>
+  <div class="tab-item" data-tab="2">
+    <span class="tab-label">关注</span>
+    <span class="tab-underline"></span>
+  </div>
+</div>
+
+<!-- ════════ 子页面（替换成你自己的内容）════════ -->
+<div class="tab-panels">
+
+  <!-- 页面 0 -->
+  <div class="tab-panel active" id="panel-0">
+    <div class="demo-page">
+      <div class="demo-card">
+        <h3>子页面 · 推荐</h3>
+        <p>这里放你已经做好的子页面内容，直接替换此 div 内部的 HTML 即可。</p>
+        <span class="tag tag-a">示例内容</span>
+      </div>
+      <div class="demo-card">
+        <h3>卡片二</h3>
+        <p>Tab 容器已处理好切换逻辑、下划线动画与淡入效果，子页面无需额外 JS。</p>
+      </div>
+      <div class="demo-card">
+        <h3>卡片三</h3>
+        <p>sticky 定位确保滚动时 Tab 栏始终固定在顶部。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页面 1 -->
+  <div class="tab-panel" id="panel-1">
+    <div class="demo-page">
+      <div class="demo-card">
+        <h3>子页面 · 热榜</h3>
+        <p>将你的第二个子页面代码粘贴到这里。</p>
+        <span class="tag tag-b">热门</span>
+      </div>
+      <div class="demo-card">
+        <h3>条目二</h3>
+        <p>每次切换 Tab 都会触发 fadeUp 动画，让转场更自然。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页面 2 -->
+  <div class="tab-panel" id="panel-2">
+    <div class="demo-page">
+      <div class="demo-card">
+        <h3>子页面 · 关注</h3>
+        <p>将你的第三个子页面代码粘贴到这里。</p>
+        <span class="tag tag-c">已关注</span>
+      </div>
+      <div class="demo-card">
+        <h3>条目二</h3>
+        <p>Tab 栏样式：粗体文字 + 底部下划线，激活时有弹性放大动画。</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const tabs   = document.querySelectorAll('.tab-item');
+  const panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const idx = +tab.dataset.tab;
+
+      // 切换 Tab 激活态
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // 切换面板
+      panels.forEach(p => p.classList.remove('active'));
+      panels[idx].classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
