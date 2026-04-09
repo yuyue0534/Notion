@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fund Profile Comparator</title>
+
+  <!-- noUiSlider for dual-handle range -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+
+  <style>
+    :root{
+      --primary:#FF9400;
+      --btn:#1D3354;
+      --bg:#f6f7f9;
+      --border: #dcdfe6;
+      --radius: 8px;
+    }
+    html, body {
+      height: 100%; overflow: hidden;
+    }
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto;background:var(--bg);}
+    header{color:var(--primary); padding:12px;text-align:left;font-weight:600;font-size: 18px;}
+    #listPage{padding:11px;padding-bottom:50px;}
+    .filter{background:#fff;border-radius:10px;padding:12px;margin-bottom:12px;}
+    .filter-group{margin:5px 2px; display: grid; grid-template-columns: 110px 1fr;}
+    .filter-group > label{font-size:13px;color:#333; padding-right: 11px; line-height: 34px;}
+    /* 容器 */
+    .return_rate_wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* 输入框均分剩余宽度 */
+    .return_rate_wrapper input {
+      flex: 1;
+      min-width: 0;   /* 防止flex子项溢出 */
+      box-sizing: border-box;
+      /* 可选：统一样式 */
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    /* 中间分隔符 ~ */
+    .return_rate_wrapper span {
+      flex-shrink: 0;
+      margin: 0 12px;
+      /* 可选样式 */
+      color: #666;
+    }
+    .card-double {
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.05),
+        0 4px 8px rgba(0, 0, 0, 0.07);
+      border-radius: 8px;
+      background: #fff;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .card-double:hover {
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.08),
+        0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    .slider{margin:10px 0;}
+    .slider-value{font-size:12px;color:#666;}
+
+    table{ border-collapse:collapse;background:#fff;}
+    th,td{padding:6px;font-size:13px;border-bottom:1px solid #eee;text-align:left;}
+    th{background:var(--primary); color: #fff;font-weight:600;}
+    #tableBody > tr:nth-child(2n+1) {background: #FFE4C4;}
+    .report_table >thead th:nth-child(4) {
+      min-width: 48px;
+    }
+    .mainSchema {border-bottom: 1px solid #eee; padding: 4px;}
+
+    .pagination{display:flex;justify-content:center;gap:10px;margin:10px 0 80px;}
+    .pagination button{border:1px solid var(--btn);padding:6px 12px;border-radius:6px;background:#eee;}
+    .pagination #pageInfo {font-size: 12px; line-height: 26px;}
+
+    .fixed-bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #ddd;padding:10px;display:flex;justify-content:space-between;align-items:center;}
+    .fixed-bar button{background:var(--btn);color:#fff;border:none;padding:8px 16px;border-radius:18px;}
+
+    .hidden{display:none;}
+
+    .back{font-size:20px;cursor:pointer;}
+
+    .riskText {
+      padding-left: 5px;
+      border-left: 3px solid;
+    }
+    .risk-1 { border-left-color: #8080FF; }
+    .risk-2 { border-left-color: #4A8AC6; }
+    .risk-3 { border-left-color: #238B8B; }
+    .risk-4 { border-left-color: #366E24; }
+    .risk-5 { border-left-color: #E6A200; }
+    .risk-6 { border-left-color: #EC6C3D; }
+    .risk-7 { border-left-color: #E02E20; }
+
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .compact-slider{
+      --handle-size: 36px;
+      --track-height: 6px;
+      --ring-bg: #FFD8A1;
+      padding: 22px calc(var(--handle-size) / 2) 0;
+    }
+    .compact-slider .slider{
+      margin: 0;
+    }
+    .compact-slider .noUi-target{
+      height: var(--track-height);
+      border: none;
+      box-shadow: none;
+      background: #E8EDF3;
+      border-radius: 999px;
+    }
+    .compact-slider .noUi-connects{
+      border-radius: 999px;
+    }
+    .compact-slider .noUi-connect{
+      background: var(--primary);
+    }
+    .compact-slider .noUi-handle{
+      width: var(--handle-size);
+      height: var(--handle-size);
+      right: calc(var(--handle-size) / -2);
+      top: calc((var(--handle-size) - var(--track-height)) / -2);
+      border: 2px solid var(--primary);
+      border-radius: 50%;
+      box-shadow: none;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .compact-slider .noUi-handle::before{
+      display: none;
+    }
+    .compact-slider .noUi-handle::after{
+      display: none;
+    }
+    .compact-slider .noUi-touch-area{
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border-radius: 50%;
+    }
+    .compact-slider .handle-value{
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .compact-slider .slider-scale{
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      height: 12px;
+    }
+    .compact-slider .scale-tick{
+      position: relative;
+      width: 0;
+      height: 12px;
+      flex: 0 0 auto;
+    }
+    .compact-slider .scale-tick::before{
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2px;
+      height: 12px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #C9D1DC;
+    }
+    .compact-slider .scale-tick.is-active::before{
+      background: var(--primary);
+    }
+
+.chk_td .chknode {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--primary);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.chk_td .chknode:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.chk_td .chknode:checked::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: 1px solid #fff; /* 勾的颜色 */
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg) translate(2px, -3px);
+}
+/* ===== MultiSelect ===== */
+.multi-select {
+  position: relative;
+  max-width: 380px;
+}
+
+.select-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 36px 6px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.placeholder {
+  color: #a8abb2;
+}
+
+.tag {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.tag span {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #c0c4cc;
+  display: none;
+}
+
+.multi-select .dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  width: 100%;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  max-height: 240px;
+  overflow-y: auto;
+  display: none;
+  z-index: 10;
+}
+
+.multi-select .dropdown.open {
+  display: block;
+}
+
+.multi-select .option {
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#listPage{
+  height: 100vh;
+  overflow-y: auto;
+}
+#comparePage{
+  height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.table-container {
+    width: 100%;
+    /* height: calc(100vh - 180px); */
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
+  #tableNode {
+    border-collapse: separate;   /* ← 核心改动，原来是 collapse */
+    border-spacing: 0;           /* 保持单元格紧贴 */
+    width: max-content;
+  }
+
+  #tableNode th,#tableNode td {
+    border: none;
+    border-right: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    padding: 6px;
+    max-width: 120px;
+    text-align: left;
+    background: #fff;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* ③ 补上左边框（只给第一列）和上边框（只给第一行） */
+  #tableNode th:first-child,
+  #tableNode td:first-child {
+    border-left: 1px solid #eee;
+    max-width: 100px;
+  }
+  #tableNode thead th {
+    border-top: 1px solid transparent; /* thead 背景已有橙色，不需要额外上边框 */
+  }
+
+  /* 固定第一行 */
+  #tableNode thead th {
+    position: sticky;
+    top: 0;
+    background: var(--primary);
+    color: #fff;
+    z-index: 2;
+    border-right-color: rgba(255,255,255,0.25);
+    border-bottom-color: rgba(255,255,255,0.25);
+  }
+
+  /* 固定第一列 */
+  #tableNode tbody td:first-child,
+  #tableNode thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    border-right: none;                          /* 取消 border-right */
+    box-shadow: 1px 0 0 0 #eee;                 /* 用 shadow 模拟右边框，跟随 sticky 层 */
+  }
+
+  /* ⑥ 左上角交叉点：同时 sticky top + left，层级最高 */
+  #tableNode thead th:first-child {
+    z-index: 4;
+    box-shadow: 1px 0 0 0 rgba(255,255,255,0.25); /* 匹配橙色表头上的阴影颜色 */
+  }
+  </style>
+</head>
+<body>
+
+  
+<div class="container" id="listPage">
+  <header>Fund Profile Comparator</header>
+
+  <div class="filter card-double-2">
+    <div class="filter-group">
+      <label>Fund Type</label>
+      <div id="fundtypes"></div>
+    </div>
+    <div class="filter-group">
+      <label class="label_title">Scheme</label>
+      <div id="schemeNode1"></div>
+    </div>
+
+    <div class="filter-group">
+      <label class="label_title">Return Rate (%)</label>
+      <div class="return_rate_wrapper">
+        <input type="text" class="return_rate_input" />
+        <span>~</span>
+        <input type="text" class="return_rate_input" />
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label class="label_title">Risk Level</label>
+      <div class="compact-slider">
+        <div id="riskSlider" class="slider"></div>
+        <!-- <div class="slider-value" id="riskText"></div> -->
+         <div class="slider-scale" id="riskScale" aria-hidden="true">
+          <span class="scale-tick" data-value="1"></span>
+          <span class="scale-tick" data-value="2"></span>
+          <span class="scale-tick" data-value="3"></span>
+          <span class="scale-tick" data-value="4"></span>
+          <span class="scale-tick" data-value="5"></span>
+          <span class="scale-tick" data-value="6"></span>
+          <span class="scale-tick" data-value="7"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <table class="report_table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Fund</th>
+        <th>Return(1Y)</th>
+        <th>Risk</th>
+        <th>FER</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div class="pagination">
+    <button onclick="prevPage()">Prev</button>
+    <span id="pageInfo"></span>
+    <button onclick="nextPage()">Next</button>
+  </div>
+</div>
+
+<div class="container hidden" id="comparePage">
+  <div class="compare-header">
+    <div class="back" onclick="backToList()">&#60;</div>
+    <header>Fund Comparison</header>
+  </div>
+
+  <div class="table-container">
+    <table id="tableNode"></table>
+  </div>
+
+</div>
+
+<div class="fixed-bar" id="fixedBar">
+  <span id="selectedCount">0 / 10 Selected</span>
+  <button onclick="goCompare()">Compare</button>
+</div>
+
+<script>
+  // 生成 2000-15000 之间的随机数，保留两位小数
+  function getRandomNumber() {
+      const random = Math.random() * (15000 - 2000) + 2000;
+      return Math.round(random * 100) / 100;
+  }
+
+  function getRandomDateInRange(startYear, endYear) {
+    const start = new Date(startYear, 0, 1);
+    const end = new Date(endYear, 11, 31);
+    const randomDate = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    
+    const day = String(randomDate.getDate()).padStart(2, '0');
+    const month = String(randomDate.getMonth() + 1).padStart(2, '0');
+    const year = randomDate.getFullYear();
+    
+    return `${day}-${month}-${year}`;
+}
+
+// 初始化一些变量名称
+let typeFilter =[], regionFilter =[];
+/* ================= MultiSelect ================= */
+class MultiSelect {
+  constructor(el, options) {
+    this.el = document.querySelector(el);
+    this.options = options;
+    this.render();
+    this.bind();
+  }
+
+  render() {
+    this.el.innerHTML = `
+      <div class="multi-select">
+        <div class="select-input"></div>
+        <div class="clear-btn">✕</div>
+        <div class="dropdown"></div>
+      </div>
+    `;
+    this.input = this.el.querySelector('.select-input');
+    this.clearBtn = this.el.querySelector('.clear-btn');
+    this.dropdown = this.el.querySelector('.dropdown');
+
+    this.placeholder = document.createElement('span');
+    this.placeholder.className = 'placeholder';
+    this.placeholder.textContent = this.options.placeholder;
+    this.input.appendChild(this.placeholder);
+
+    this.options.options.forEach(opt => {
+      const label = document.createElement('label');
+      label.className = 'option';
+      label.innerHTML = `<input type="checkbox" value="${opt.value}"> ${opt.label}`;
+      this.dropdown.appendChild(label);
+    });
+  }
+
+  bind() {
+    this.input.onclick = () => {
+      this.dropdown.classList.toggle('open');
+    };
+
+    this.clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.dropdown.querySelectorAll('input').forEach(i => i.checked = false);
+      this.renderTags();
+    };
+
+    this.dropdown.querySelectorAll('input').forEach(cb => {
+      cb.onchange = () => this.renderTags();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!this.el.contains(e.target)) {
+        this.dropdown.classList.remove('open');
+      }
+    });
+  }
+
+  renderTags() {
+    this.input.innerHTML = '';
+    const checked = [...this.dropdown.querySelectorAll('input')].filter(i => i.checked);
+
+    if (!checked.length) {
+      this.input.appendChild(this.placeholder);
+      this.clearBtn.style.display = 'none';
+    } else {
+      this.clearBtn.style.display = 'block';
+      checked.forEach(cb => {
+        const tag = document.createElement('div');
+        tag.className = 'tag';
+        tag.innerHTML = `${cb.value}<span>✕</span>`;
+        tag.querySelector('span').onclick = (e) => {
+          e.stopPropagation();
+          cb.checked = false;
+          this.renderTags();
+        };
+        this.input.appendChild(tag);
+      });
+    }
+
+    this.options.onChange?.(checked.map(i => i.value));
+  }
+}
+//应用组件
+new MultiSelect('#fundtypes', {
+  placeholder: 'select type',
+  options: [
+    { label: 'Equity Fund', value: 'Equity Fund' },
+    { label: 'Mixed Assets Fund', value: 'Mixed Assets Fund' },
+    { label: 'Bond Fund', value: 'Bond Fund' },
+    { label: 'Guaranteed Fund', value: 'Guaranteed Fund' },
+    { label: 'Money Market Fund - MPF Conservative Fund', value: 'Money Market Fund - MPF Conservative Fund' },
+    { label: 'Money Market Fund - Other than MPF Conservative Fund', value: 'Money Market Fund - Other than MPF Conservative Fund' },
+  ],
+  onChange: (v) => {
+    console.log('typeSelect:', v)
+    let typeFilter = v;
+    page =1;
+    renderMainTable();
+  }
+});
+//应用组件
+    new MultiSelect('#schemeNode1', {
+      placeholder: 'select scheme',
+      options: [
+        { label: 'HSBC-HB', value: 'HSBC-HB' },
+        { label: 'HSBC-FD', value: 'HSBC-FD' },
+        { label: 'HSBC-HS', value: 'HSBC-HS' },
+        { label: 'AIA-VC', value: 'AIA-VC' },
+        { label: 'AIA-MC', value: 'AIA-MC' },
+        { label: 'MS', value: 'MS' },
+        { label: 'CL', value: 'CL' },
+        { label: 'JF', value: 'JF' },
+        { label: 'SK', value: 'SK' },
+      ],
+      onChange: (v) => {
+        schemeTextList1 = v;
+        console.log('account-Select:', v)
+      }
+    });
+
+  const riskSlider = document.getElementById('riskSlider');
+
+  noUiSlider.create(riskSlider, {
+    start: [1, 6],
+    step:1,
+    connect: true,
+    range: { min: 1, max: 7 }
+  });
+
+  const riskScaleTicks = [...document.querySelectorAll('#riskScale .scale-tick')];
+  const sliderHandles = riskSlider.querySelectorAll('.noUi-handle');
+
+  sliderHandles.forEach((handle) => {
+    const touchArea = handle.querySelector('.noUi-touch-area');
+    touchArea.innerHTML = `<span class="handle-value"></span>`;
+  });
+
+  const schemeList = ['HSBC-HB' ,'HSBC-FD','AIA-VC','AIA MPF - Prime Value Choice','HSBC Mandatory Provident Fund - SuperTrust Plus','JF','SK'];
+  const fundTypeList = [ 'Equity Fund','Mixed Assets Fund','Bond Fund', 'Guaranteed Fund' ,'Money Market Fund - MPF Conservative Fund','Money Market Fund - Other than MPF Conservative Fund' ];
+  const fundsList = ['Age 65 Plus Fund', 'American Fund', 'Asian Bond Fund', 'Asian Equity Fund', 'Balanced Portfolio', 'Capital Stable Portfolio', 'China HK Dynamic Asset Allocation Fund', 'Core Accumulation Fund', 'Eurasia Fund', 'European Equity Fund', 'Global Bond Fund', 'Greater China Equity Fund', 'Green Fund', 'Growth Portfolio', 'Guaranteed Portfolio', 'Hong Kong and China Fund', "Manager's Choice Fund"];
+    
+  const pageSize = 20; let page = 1;
+  const funds = Array.from({length:300},(_,i)=>({
+    id:i,
+    name: fundsList[i%(fundsList.length)],
+    code:`GEF${1000+i}`,
+    risk:Math.floor(Math.random() *7 ) +1,
+    expense:+(Math.random()*1.2+0.3).toFixed(2),
+    scheme: schemeList[i % schemeList.length],
+    fundType: fundTypeList[i % fundTypeList.length],
+    Trustee: Math.random()>0.5 ? 'AIAT' :'HSBC',
+    launchDate: getRandomDateInRange(2010, 2025),
+    fundSize: getRandomNumber(),
+    ManagementFees: Math.random()>0.5 ? '0.75' :'1.285',
+    AdministrationFee: Math.random()>0.5 ? '0.51' :'0.5',
+    InvestmentManagementFee: Math.random()>0.5 ? 'Up to 0.25' :'Up to 0.65',
+    MemberServicingFee: Math.random()>0.5 ? '0.2' :'0',
+    LatestFER: ['0.78633','1.66408','0.78523','1.55718'][Math.floor(Math.random() * 4)],
+    return:+(Math.random()*8+1).toFixed(2),
+    FundRiskIndicator: [5.82, 11.68, 6.97, 1.60][Math.floor(Math.random() * 4)],
+    return1y:+(Math.random()*8+1).toFixed(2),
+    return5y:+(Math.random()*18+1).toFixed(2),
+    return10y:+(Math.random()*68+1).toFixed(2),
+    returnAll:+(Math.random()*118+1).toFixed(2),
+  }));
+
+  let selected=[];
+  let retRange=[2,12];
+  let riskRange=[1,6];
+
+  // riskSlider.noUiSlider.on('update',v=>{ riskRange=v.map(Number); riskText.textContent=`${riskRange[0]} - ${riskRange[1]}`;page=1; renderMainTable(); });
+
+  function syncRiskSlider(values){
+    riskRange = values.map(v => Math.round(Number(v)));
+
+    sliderHandles.forEach((handle, index) => {
+      const value = riskRange[index];
+      handle.querySelector('.handle-value').textContent = value;
+      handle.setAttribute('aria-valuenow', value);
+      handle.setAttribute('aria-valuetext', `Risk ${value}`);
+    });
+
+    riskScaleTicks.forEach((tick, index) => {
+      const tickValue = index + 1;
+      tick.classList.toggle(
+        'is-active',
+        tickValue >= riskRange[0] && tickValue <= riskRange[1]
+      );
+    });
+
+    page = 1;
+    renderMainTable();
+  }
+
+  riskSlider.noUiSlider.on('update', syncRiskSlider);
+
+  function filtered(){ return funds.filter(f=>f.return>=retRange[0] && f.return<=retRange[1] && f.risk>=riskRange[0] && f.risk<=riskRange[1]); }
+
+  function renderMainTable(){
+    const list=filtered();
+    console.log('====render-table===', list)
+    const start=(page-1)*pageSize;
+    tableBody.innerHTML=list.slice(start,start+pageSize).map(f=>`
+      <tr>
+        <td class="chk_td"><input class="chknode" type="checkbox" ${selected.includes(f.id)?'checked':''} onchange="toggle(${f.id})"></td>
+        <td>${f.name}</td>
+        <td>${f.return}%</td>
+        <td><span class="riskText risk-${f.risk}">Class ${f.risk}</span></td>
+        <td>${f.expense}%</td>
+      </tr>`).join('');
+    const pageCount = Math.ceil(list.length /pageSize)
+    pageInfo.textContent=`Page ${page} / ${pageCount}`;
+    selectedCount.textContent=`${selected.length} / 10 Selected`;
+  }
+
+  function toggle(id){ if(selected.includes(id)) selected=selected.filter(i=>i!==id); else if(selected.length< 10) selected.push(id); renderMainTable(); }
+  function prevPage(){ if(page>1){page--; renderMainTable();}}
+  function nextPage(){ if(page*pageSize<filtered().length){page++; renderMainTable();}}
+
+  
+  function backToList(){ comparePage.classList.add('hidden'); listPage.classList.remove('hidden'); fixedBar.classList.remove('hidden'); }
+
+  function initRenderList(headers, data){
+    // 表头（10列）
+    /* const headers = ["名称", "列1", "列2" ];
+
+    // 30行数据
+    const data = Array.from({ length: 10 }, (_, i) => {
+      return [
+        "行" + (i + 1), // 第一列（固定列）
+        ...Array.from({ length: 2 }, (_, j) => `R${i+1}C${j+1}`)
+      ];
+    });
+    data[2][1]='sgfsdsdgsdfgsdgf'
+    data[5][2]='sgfsdsdgsdfFSFSDFgsdgf' */
+
+    console.log('hhheader: ', headers,'data---; ', data )
+
+    // ====== 渲染表格 ======
+    const tableNode = document.getElementById("tableNode");
+    tableNode.innerHTML = '';
+
+    // 表头
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+
+    headers.forEach(text => {
+      const th = document.createElement("th");
+      th.innerText = text;
+      headRow.appendChild(th);
+    });
+
+    thead.appendChild(headRow);
+    tableNode.appendChild(thead);
+
+    // 表体
+    const tbody = document.createElement("tbody");
+
+    data.forEach(row => {
+      const tr = document.createElement("tr");
+
+      row.forEach(cell => {
+        const td = document.createElement("td");
+        td.innerText = cell;
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+
+    tableNode.appendChild(tbody);
+  }
+
+ function goCompare(){
+  if(!selected.length) return alert('Select funds first');
+  const fs=funds.filter(f=>selected.includes(f.id));
+  const tableData = {
+    firstColumnTitle: "Fund",
+    columns: fs.map(c=>c.name),
+    rows: [
+      { label: "Scheme", values: fs.map(c=>c.scheme) },
+      { label: "MPF Trustee", values: fs.map(c=>c.Trustee) },
+      { label: "FundType", values: fs.map(c=>c.fundType) },
+      { label: "LaunchDate", values: fs.map(c=>c.launchDate) },
+      { label: "Fund size (HKD' m)", values: fs.map(c=>c.fundSize) },
+      { label: "Management Fees (% p.a.)", values: fs.map(c=>c.ManagementFees) },
+      { label: "Administration Fee (% p.a.)", values: fs.map(c=>c.AdministrationFee) },
+      { label: "Investment Management Fee (% p.a.)", values: fs.map(c=>c.InvestmentManagementFee) },
+      { label: "Guarantee Charge (% p.a.)", values: fs.map(c=> '0') },
+      { label: "Member Servicing Fee (% p.a.)", values: fs.map(c=>c.MemberServicingFee) },
+      { label: "Latest FER (%)", values: fs.map(c=>c.LatestFER) },
+      { label: "Risk Class", values: fs.map(c=>c.risk) },
+      { label: "Fund Risk Indicator (%)", values: fs.map(c=>c.FundRiskIndicator) },
+      { label: "Return(1Year %)", values: fs.map(c=>c.return1y) },
+      { label: "Return(5Year %)", values: fs.map(c=>c.return5y) },
+      { label: "Return(10Year %)", values: fs.map(c=>c.return10y) },
+      { label: "Return(Since Launch %)", values: fs.map(c=>c.returnAll) },
+      { label: "Expense(%)", values: fs.map(c=>c.expense) },
+    ]
+  }
+  let headers = fs.map(c=>c.name);
+  headers.unshift('Fund');
+  let rowHeaders = tableData.rows.map(c=>c.label);
+  let dataMatrix = tableData.rows.map(item => [].concat(item.label, item.values));
+  console.log('fsss: ', fs, 'tabbbb: ', tableData )
+
+  listPage.classList.add('hidden');
+  fixedBar.classList.add('hidden');
+  comparePage.classList.remove('hidden');
+
+  initRenderList(headers,dataMatrix)
+ }
+
+  renderMainTable();
+
+</script>
+</body>
+</html>
