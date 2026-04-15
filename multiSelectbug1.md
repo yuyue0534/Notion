@@ -87,112 +87,158 @@
 
 ---
 
-## 分析
-
-固定前两列的核心方案：外层容器 `overflow-x: auto`，固定列用 `position: sticky; left: Npx`，关键是两列的 `left` 值要精确对齐，且固定列需要 `z-index` 压住滚动列，背景色也要显式设置否则透明会穿透。
-
-列宽规划：
-- 第1列（checkbox）：`32px`
-- 第2列（Fund）：`110px`，`left: 32px`
-
----
+需求理解：在 dropdown 顶部加一个「全选 / 取消全选」的控制项。
 
 ## Diff
+
+**JS 部分：**
+
+```diff
+  render() {
+    this.el.innerHTML = `
+      <div class="multi-select">
+        <div class="select-input"></div>
+        <div class="clear-btn">✕</div>
+        <div class="dropdown"></div>
+      </div>
+    `;
+    this.input = this.el.querySelector('.select-input');
+    this.clearBtn = this.el.querySelector('.clear-btn');
+    this.dropdown = this.el.querySelector('.dropdown');
+
+    this.placeholder = document.createElement('span');
+    this.placeholder.className = 'placeholder';
+    this.placeholder.textContent = this.options.placeholder;
+    this.input.appendChild(this.placeholder);
+
++   // 全选控制行
++   const selectAllLabel = document.createElement('label');
++   selectAllLabel.className = 'option option-select-all';
++   selectAllLabel.innerHTML = `<input type="checkbox" class="select-all-chk"> 全选`;
++   this.selectAllChk = selectAllLabel.querySelector('input');
++   this.dropdown.appendChild(selectAllLabel);
++
++   // 分隔线
++   const divider = document.createElement('div');
++   divider.className = 'option-divider';
++   this.dropdown.appendChild(divider);
+
+    this.options.options.forEach(opt => {
+      const label = document.createElement('label');
+      label.className = 'option';
+      label.innerHTML = `<input type="checkbox" value="${opt.value}"> ${opt.label}`;
+      this.dropdown.appendChild(label);
+    });
+  }
+```
+
+```diff
+  bind() {
+    this.input.onclick = () => {
+      this.dropdown.classList.toggle('open');
+    };
+
+    this.clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.dropdown.querySelectorAll('input').forEach(i => i.checked = false);
++     this._syncSelectAll();
+      this.renderTags();
+    };
+
+    this.dropdown.querySelectorAll('input').forEach(cb => {
+-     cb.onchange = () => this.renderTags();
++     cb.onchange = () => {
++       this._syncSelectAll();
++       this.renderTags();
++     };
+    });
+
++   // 全选 checkbox 事件
++   this.selectAllChk.onchange = () => {
++     const checked = this.selectAllChk.checked;
++     this._getOptionInputs().forEach(i => i.checked = checked);
++     this.renderTags();
++   };
+
+    document.addEventListener('click', (e) => {
+      if (!this.el.contains(e.target)) {
+        this.dropdown.classList.remove('open');
+      }
+    });
+  }
+```
+
+```diff
++ // 获取所有选项 input（排除全选 chk 自身）
++ _getOptionInputs() {
++   return [...this.dropdown.querySelectorAll('input:not(.select-all-chk)')];
++ }
++
++ // 根据当前选中状态同步全选框的状态
++ _syncSelectAll() {
++   const inputs = this._getOptionInputs();
++   const checkedCount = inputs.filter(i => i.checked).length;
++   this.selectAllChk.checked = checkedCount === inputs.length;
++   this.selectAllChk.indeterminate = checkedCount > 0 && checkedCount < inputs.length;
++ }
+```
+
+```diff
+  getValue() {
+-   const checked = [...this.dropdown.querySelectorAll('input')]
+-     .filter(i => i.checked)
+-     .map(i => i.value);
++   const checked = this._getOptionInputs()
++     .filter(i => i.checked)
++     .map(i => i.value);
+    return checked;
+  }
+
+  clear() {
+-   this.dropdown.querySelectorAll('input').forEach(i => i.checked = false);
++   this._getOptionInputs().forEach(i => i.checked = false);
++   this._syncSelectAll();
+    this.renderTags();
+  }
+
+  setValue(values) {
+-   const inputs = this.dropdown.querySelectorAll('input');
++   const inputs = this._getOptionInputs();
+    inputs.forEach(input => {
+      input.checked = values.includes(input.value);
+    });
++   this._syncSelectAll();
+    this.renderTags();
+  }
+
+  renderTags() {
+    this.input.innerHTML = '';
+-   const checked = [...this.dropdown.querySelectorAll('input')].filter(i => i.checked);
++   const checked = this._getOptionInputs().filter(i => i.checked);
+    ...
+  }
+```
 
 **CSS 部分：**
 
 ```diff
-+/* ── 固定列表格容器 ── */
-+.report_table_wrap {
-+  overflow-x: auto;
-+  -webkit-overflow-scrolling: touch;
-+  border-radius: var(--radius);
-+}
-
- .report_table >thead th:nth-child(2) { min-width: 80px;}
- .report_table >thead th:nth-child(3) { min-width: 80px;}
- .report_table >thead th:nth-child(5) { min-width: 55px;}
- .report_table >thead th:nth-child(6) { min-width: 45px;}
- .report_table >thead th:nth-child(7) { min-width: 45px;}
- .report_table >thead th:nth-child(8) { min-width: 45px;}
-
-+/* 固定列通用 */
-+.report_table th:nth-child(1),
-+.report_table td:nth-child(1),
-+.report_table th:nth-child(2),
-+.report_table td:nth-child(2) {
-+  position: sticky;
-+  z-index: 2;
-+  background: #fff;  /* 防透明穿透 */
-+}
-+#reportTableBody > tr:nth-child(2n+1) td:nth-child(1),
-+#reportTableBody > tr:nth-child(2n+1) td:nth-child(2) {
-+  background: #FFE4C4; /* 同斑马纹色 */
-+}
++ .option-select-all {
++   font-weight: 500;
++   color: #333;
++ }
 +
-+/* 第1列：checkbox，宽32px，left:0 */
-+.report_table th:nth-child(1),
-+.report_table td:nth-child(1) {
-+  left: 0;
-+  width: 32px;
-+  min-width: 32px;
-+  max-width: 32px;
-+}
++ .option-divider {
++   height: 1px;
++   background: var(--border);
++   margin: 2px 8px;
++ }
 +
-+/* 第2列：Fund，left = 第1列宽度 32px */
-+.report_table th:nth-child(2),
-+.report_table td:nth-child(2) {
-+  left: 32px;
-+  min-width: 110px;
-+  max-width: 110px;
-+  /* 右侧加一条分隔线，区分固定区与滚动区 */
-+  box-shadow: 2px 0 4px -1px rgba(0,0,0,0.08);
-+}
-+
-+/* thead 固定列 z-index 要高于 tbody，避免内容滚动时压过表头 */
-+.report_table thead th:nth-child(1),
-+.report_table thead th:nth-child(2) {
-+  z-index: 3;
-+}
-+
-+/* Fund 列文字截断，移动端列宽有限 */
-+.report_table td:nth-child(2) {
-+  overflow: hidden;
-+  text-overflow: ellipsis;
-+  white-space: nowrap;
-+}
-```
-
-**HTML 部分（给表格加外层容器）：**
-
-```diff
--<div class="table-scroll-wrap">
--  <table class="report_table">
-+<div class="table-scroll-wrap">
-+  <div class="report_table_wrap">
-+  <table class="report_table" style="table-layout: fixed;">
-     <thead>
-       <tr>
-         <th></th>
-         <th>Fund</th>
-         <th>Fund Type</th>
-         <th>Scheme</th>
-         <th>Risk</th>
-         <th id="date1_price"></th>
-         <th id="date2_price"></th>
-         <th id="date3_price"></th>
-       </tr>
-     </thead>
-     <tbody id="reportTableBody"></tbody>
-   </table>
-+  </div>
- </div>
++ /* indeterminate 状态样式（部分选中） */
++ .option-select-all input[type="checkbox"]:indeterminate {
++   opacity: 0.6;
++ }
 ```
 
 ---
 
-## 注意事项
-
-- `table-layout: fixed` 配合 `sticky` 在移动端 WebKit 兼容性更好，列宽以 CSS 定义为准不会被内容撑开
-- 斑马纹的奇数行背景 `#FFE4C4` 需要在固定列 td 上显式重声明，否则 `sticky` 脱离普通流后背景透明会露出滚动内容
-- `table-scroll-wrap` 已有 `overflow-y: auto`，外层不变；新增的 `report_table_wrap` 只负责横向滚动，两层职责分离
+全选框支持三种状态：**全未选**（unchecked）、**部分选中**（indeterminate）、**全部选中**（checked），通过 `_syncSelectAll()` 在每次选项变化时自动同步，`getValue()` / `clear()` / `setValue()` 均不受影响。
