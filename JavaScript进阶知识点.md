@@ -1,6 +1,6 @@
 ## JavaScript进阶知识点全览
 
-一、作用域、闭包、与执行上下文
+**一、作用域、闭包、与执行上下文**
 - 执行上下文与调用栈：每次函数调用都会创建新的执行上下文，包含 variableEnvironment、lexicalEnvironment 和 this 绑定，执行上下文压入调用栈，返回后弹出。
 - 词法作用域：js采用词法作用域，函数的作用域在调用的时候确定，而非调用时，属性查找沿着[[Environment]]逐层向上。
 - 闭包：函数 + 其外部词法环境的引用，核心用途：
@@ -14,7 +14,7 @@
    - function 整体提升
    - let、const，存在暂时性死区，访问会抛错 ReferenceError
  
-二、异步编程与事件循环
+**二、异步编程与事件循环**
 - 事件循环（event loop）：执行顺序： 同步代码 -> 微任务队列（promise.then, queueMicroTask, MutationObserver） -> 宏任务队列（setTimeout, setInterval, I/O）；每一轮宏任务执行前、先清空全部微任务。
 - promise深入：
    - 三种状态：pending -> fulfilled/ reject（不可逆）；
@@ -29,7 +29,7 @@
    - MessageChannel：创建低优先级宏任务。
  
 
-三、原型、继承、与 类：
+**三、原型、继承、类**
 - 原型链：每个对象有`Prototype`，属性查找沿着链往上，终点为 object.prototype (其 Prototype 为 null);
 - new操作符原理（四步）：
    - 创建空对象；
@@ -54,7 +54,7 @@ Child.prototype.contructor = Child
 
 **Mixin模式**： JS不支持多继承，用Object.assign(Target.prototype, MixinA, MixinB)或高阶函数组合行为；
 
-四、this绑定与函数机制
+**四、this绑定与函数机制**
 - this的四种绑定原则（优先级从低到高）:
 
 | 规则 | 示例 | this指向 |
@@ -81,7 +81,7 @@ const compose = (...fns) => x =>fns.reduceRight( (v, f) =>f(v), x );
 const pipe = (...fns) => x=> fns.reduce( (v,f) => f(v),x )
 ```
 
-五、内存管理与垃圾回收
+**五、内存管理与垃圾回收**
 - V8的堆内存结构：
    - 新生代：存活时间短的对象，Scavenge（复制）算法，速度快；
    - 老生代：存活时间长的对象，标记清除 + 标记整理。
@@ -92,15 +92,31 @@ const pipe = (...fns) => x=> fns.reduce( (v,f) => f(v),x )
    - 闭包意外持有大对象引用；
    - 变量持有已经从文档移除的dom节点（游离节点）；
 
-六、dom操作与事件系统：
+**六、dom操作与事件系统**
 - 事件流三阶段：捕获（自顶向下） -> 目标 -> 冒泡（自底向上）；addEventListener 在捕获阶段触发；
 - 事件委托：将监听器挂在父节点，通过e.target判断来源，大幅减少监听器数量，也支持动态添加的子元素；
 - 重排（Reflow）vs 重绘（Repaint）：
    - 改变几何属性（宽高位置）-> 触发重排（代价最高）；
    - 只改变颜色 -> 只会触发重绘；
    - 优化：使用documentFragment 批量操作，读写分离，transform开启GPU合成层；
+ 
+- 现代观察者API：
+   - Mutationobserver：异步监听dom变更（微任务回调）；
+   - IntersectionObserver：监听元素与视口交叉，用于懒加载；
+   - ResizeObserver：监听元素尺寸变化；
 
-
+**ES6+ 核心新特性**
+- Proxy与Reflect：
+```
+const handler = {
+   get(target, key, receiver) {
+      console.log(`读取 ${key}`)
+      return Reflect.get(target, key, receiver)
+   }
+};
+const proxy = new Proxy(obj, handler);
+```
+Proxy拦截13 种操作，是vue3响应式原理的核心，Reflect提供与陷阱对应的默认行为
 
 
 
