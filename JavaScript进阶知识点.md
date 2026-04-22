@@ -23,3 +23,16 @@
  
 - async / await：async函数始终返回promise； await暂停当前微任务； 关键性能点：循环中的await是串行的，需要并行时 用promise.all。
 - generator 与迭代器协议：`function*` 返回迭代器，`yield` 暂停执行；实现 `[Symbol.iterator]`使得自定义的对象支持`for...of`，`yield*` 可委托给另一个可迭代对象。
+- 任务调度API：
+   - requestAnimationFrame：每一帧渲染前执行，适合动画；
+   - requestIdleCallback：浏览器空闲时执行，适合低优先级任务；
+   - MessageChannel：创建低优先级宏任务。
+ 
+
+三、原型、继承、与 类：
+- 原型链：每个对象有`Prototype`，属性查找沿着链往上，终点为 object.prototype (其 Prototype 为 null);
+- new操作符原理（四步）：
+   - 创建空对象；
+   - 设置 Prototype 为 Fn.prototype；
+   - 以新对象为 this执行构造函数；
+   - 若构造函数返回对象 则用它，否则返回新对象。
