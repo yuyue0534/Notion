@@ -66,16 +66,20 @@ Child.prototype.contructor = Child
 
 - 箭头函数无自身this，捕获外层词法this，不可被`call/ bind/ apply`改变;
 - 柯里化（currying）:简单来说，这个函数的作用是：把一个接收多个参数的函数，转换成一个可以“分步”接收参数的函数。
-      ```
-      const curry = fn => {
-         const arity = fn.length;
-         return function curried(...args) {
-            return args.length >= arity ? fn(...args) : (...more)=>curried(...args, ...more)
-         }
-      }
-      ```
 
-
+```
+const curry = fn => {
+   const arity = fn.length;
+   return function curried(...args) {
+      return args.length >= arity ? fn(...args) : (...more)=>curried(...args, ...more)
+   }
+}
+```
+- 函数组合（compose、pipe）
+```
+const compose = (...fns) => x =>fns.reduceRight( (v, f) =>f(v), x );
+const pipe = (...fns) => x=> fns.reduce( (v,f) => f(v),x )
+```
 
 
 
