@@ -56,11 +56,12 @@ Child.prototype.contructor = Child
 
 四、this绑定与函数机制
 - this的四种绑定原则（优先级从低到高）:
+
 | 规则 | 示例 | this指向 |
-|---|---|---|
-| 默认绑定| fn() | 全局对象/undefined(严格模式) |
-|隐式绑定| obj.fn() | obj |
-|显式绑定 | fn.call(ctx) | ctx |
+| --- | --- | --- |
+| 默认绑定 | fn() | 全局对象/undefined(严格模式) |
+| 隐式绑定 | obj.fn() | obj |
+| 显式绑定 | fn.call(ctx) | ctx |
 
 - 箭头函数无自身this，捕获外层词法this，不可被`call/ bind/ apply`改变;
 
