@@ -16,3 +16,10 @@
  
 二、异步编程与事件循环
 - 事件循环（event loop）：执行顺序： 同步代码 -> 微任务队列（promise.then, queueMicroTask, MutationObserver） -> 宏任务队列（setTimeout, setInterval, I/O）；每一轮宏任务执行前、先清空全部微任务。
+- promise深入：
+   - 三种状态：pending -> fulfilled/ reject（不可逆）；
+   - promise.all（全部成功才成功）、allSettled（全部落定）、race（最快的）、any（最快成功的）。
+   - promise构造函数的执行器是同步执行的。
+ 
+- async / await：async函数始终返回promise； await暂停当前微任务； 关键性能点：循环中的await是串行的，需要并行时 用promise.all。
+- generator 与迭代器协议：`function*` 返回迭代器，`yield` 暂停执行；实现 `[Symbol.iterator]`使得自定义的对象支持`for...of`，`yield*` 可委托给另一个可迭代对象。
