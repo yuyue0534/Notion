@@ -115,9 +115,36 @@ const handler = {
    }
 };
 const proxy = new Proxy(obj, handler);
+Proxy拦截13 种操作，是vue3响应式原理的核心，Reflect提供与陷阱对应的默认行为。
 ```
-Proxy拦截13 种操作，是vue3响应式原理的核心，Reflect提供与陷阱对应的默认行为
+- Map、Set、WeakMap、WeakSet；
+   - Map：任意类型的键，保持插入顺序，`.size`属性；
+   - Set:唯一值的集合，可用于数组去重；
+   - WeakMap/WeakSet：键为弱引用，不可枚举，适用于存储私有数据或做缓存；
+ 
+- ES2020-2024精选：
+```
+//空值合并 + 可选链
+const name = user?.profile?.name ?? 'defaultName';
 
+//promise.any （任一成功）
+const fastest = await Promise.any([p1, p2, p3])
+
+//深克隆
+const clone = structuredClone(obj);
+
+//负索引
+const last = arr.at(-1);
+
+// Object.hasOwn（替代 hasOwnProperty）
+Object.hasOwn(obj, 'key')
+
+//Top Level await (ESM中)
+const data = await fetch('./api').then(r => r.json() )
+
+//数组分组
+const grouped = arr.group(item => item.type)
+```
 
 
 
