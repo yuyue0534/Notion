@@ -62,6 +62,7 @@ Child.prototype.contructor = Child
 | 默认绑定 | fn() | 全局对象/undefined(严格模式) |
 | 隐式绑定 | obj.fn() | obj |
 | 显式绑定 | fn.call(ctx) | ctx |
+| new绑定 | new fn() | 新创建的实例 |
 
 - 箭头函数无自身this，捕获外层词法this，不可被`call/ bind/ apply`改变;
 
