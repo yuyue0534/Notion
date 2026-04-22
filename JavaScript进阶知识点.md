@@ -8,3 +8,11 @@
    - 柯里化、偏应用函数
    - 记忆化
    - 循环中用 let 或 IIFE 保存正确的状态
+ 
+- 变量提升
+   - var 声明提升，值为 undefined
+   - function 整体提升
+   - let、const，存在暂时性死区，访问会抛错 ReferenceError
+ 
+二、异步编程与事件循环
+- 事件循环（event loop）：执行顺序： 同步代码 -> 微任务队列（promise.then, queueMicroTask, MutationObserver） -> 宏任务队列（setTimeout, setInterval, I/O）；每一轮宏任务执行前、先清空全部微任务。
