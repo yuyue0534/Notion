@@ -156,4 +156,64 @@ ESM vs CJS 核心区别
 | Tree Shaking | 支持 | 支持 |
 | 顶层this | undefined | module.exports |
 
+Tree Shaking： 基于ESM静态分析，打包器标记未使用的导出，压缩时删除；在package.json中设置 “sideEffects: false” 告知打包器这个包 无副作用；
+
+动态导入：
+```
+//路由懒加载示例：
+const route = {
+   component: () => import('./views/Home.vue')
+}
+```
+
+常用设计模式：
+- 观察者模式：subject直接通知observer（如 EventEmitter）；
+- 发布订阅模式：通过事件总线中介解耦（如$emit/ $on）；
+- 单例模式：ES Module的顶层export 天然时单例；
+- 装饰器模式（AOP）：不修改原函数、包裹添加前置/后置逻辑。
+
+**九、性能优化**
+
+ 防抖与节流
+```
+//防抖：最后一次触发, N ms后执行
+function debounce(fn, delay) {
+   let timer;
+   return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+   }
+}
+//节流，每次间隔M ms 最多一次
+function throttle(fn, interval) {
+   let last = 0;
+   return function(...args) {
+      const now = Date.now();
+      if(now - last >= interval) {
+         last = now;
+         fn.apply(this, args)
+      }
+   }
+}
+```
+
+V8隐藏类与内联缓存优化
+- 隐藏类：对象类型属性相同时共享隐藏类，访问更快；
+- 内联缓存（IC）：单态（monomorphic）> 多态（polymorphic）> 超态（megamorphic）
+- 避免去优化：不要动态改变对象结构，避免混合类型数组；
+
+Web Worker
+```
+//主线程
+const worker = new Worker('./heavy.js');
+worker.postMessage({data: largeArray});
+worker.onmessage = function(e){
+   console.log(e.data);
+}
+//heavy.js
+self.onmessage = function(e) {
+   const result = heavyCompute(e.data);
+   self.postMessage(result);
+}
+```
 
