@@ -146,5 +146,14 @@ const data = await fetch('./api').then(r => r.json() )
 const grouped = arr.group(item => item.type)
 ```
 
+**八、模块化与工程化**
+
+ESM vs CJS 核心区别
+| 特性 | ESM | CJS |
+| --- | --- | --- |
+| 导入时机 | 静态（编译期间） | 动态（运行时） |
+| 绑定类型 | Live binding（实时） | 值拷贝 |
+| Tree Shaking | 支持 | 支持 |
+| 顶层this | undefined | module.exports |
 
 
