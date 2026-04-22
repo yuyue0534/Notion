@@ -51,3 +51,21 @@ Child.prototype.contructor = Child
 - 子类构造函数必须调用super()；
 - static方法属于类本身， 不在实例上；
 - 私有字段 field （ES2022）真正的私有；
+
+**Mixin模式**： JS不支持多继承，用Object.assign(Target.prototype, MixinA, MixinB)或高阶函数组合行为；
+
+四、this绑定与函数机制
+- this的四种绑定原则（优先级从低到高）:
+| 规则 | 示例 | this指向 |
+|---|---|---|
+| 默认绑定| fn() | 全局对象/undefined(严格模式) |
+|隐式绑定| obj.fn() | obj |
+|显式绑定 | fn.call(ctx) | ctx |
+
+- 箭头函数无自身this，捕获外层词法this，不可被`call/ bind/ apply`改变;
+
+
+
+
+
+
