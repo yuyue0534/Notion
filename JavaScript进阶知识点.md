@@ -36,3 +36,18 @@
    - 设置 Prototype 为 Fn.prototype；
    - 以新对象为 this执行构造函数；
    - 若构造函数返回对象 则用它，否则返回新对象。
+
+**寄生组合式继承**
+```
+function Child(...arg){
+   Parent.call(this, ...arg)      //借用构造函数
+}
+Child.prototype =Object.create(Parent.prototype)
+Child.prototype.contructor = Child
+```
+
+**ES6 class语法糖**
+- 本质仍然基于原型，extends自动处理原型链；
+- 子类构造函数必须调用super()；
+- static方法属于类本身， 不在实例上；
+- 私有字段 field （ES2022）真正的私有；
