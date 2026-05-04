@@ -21,7 +21,10 @@ JavaScript 是**单线程**的——在浏览器里，它和 UI 渲染共享同�
 
 **微任务（Microtask）**：`Promise.then/catch/finally`、`queueMicrotask`、`MutationObserver`。一个宏任务结束后，事件循环会把微任务队列**全部清空**再继续。
 
-这个差异会产生反直觉的执行顺序，下面的交互演示可以让你亲眼看到：逐步点击，你会亲眼看到 `③ 微任务 then-1` 和 `③ 微任务 then-2` 都在 `④ 宏任务 setTimeout` 之前打印——哪怕 `setTimeout` 的延迟是 0ms。
+这个差异会产生反直觉的执行顺序，下面的交互演示可以让你亲眼看到：
+<img width="1440" height="952" alt="图片" src="https://github.com/user-attachments/assets/b9f39455-1ee7-40b1-90fd-cce2020cca1e" />
+
+逐步点击，你会亲眼看到 `③ 微任务 then-1` 和 `③ 微任务 then-2` 都在 `④ 宏任务 setTimeout` 之前打印——哪怕 `setTimeout` 的延迟是 0ms。
 
 ---
 
