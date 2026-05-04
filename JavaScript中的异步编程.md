@@ -44,7 +44,10 @@ ES6 引入 `Promise`，把"未来的值"封装成一个对象，允许链式调�
 
 ES2017 的语法糖，本质上是 Promise 的包装，但写起来几乎和同步代码一样。`await` 会暂停当前 `async` 函数的执行（注意：只暂停这个函数，不阻塞主线程），等 Promise resolve 后从这里恢复。
 
-下面用一个并排交互来感受三代写法解决同一个问题时的差异：---
+下面用一个并排交互来感受三代写法解决同一个问题时的差异：
+<img width="1440" height="792" alt="图片" src="https://github.com/user-attachments/assets/773bc192-447c-45ab-8223-e65b929a86e7" />
+
+---
 
 ## Promise 的状态机
 
