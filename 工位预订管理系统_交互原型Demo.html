@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工位预订管理系统 Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --line: #dfe6f1;
+      --text: #24324a;
+      --muted: #68778f;
+      --available: #e8f7ed;
+      --available-border: #36a269;
+      --reserved: #fff0e4;
+      --reserved-border: #ef8b35;
+      --fixed: #eaf0ff;
+      --fixed-border: #5c7ee6;
+      --maintenance: #f3f4f6;
+      --maintenance-border: #8c98a8;
+      --selected: #eef3ff;
+      --selected-border: #244fd6;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    }
+    .app-shell { max-width: 1680px; margin: 0 auto; padding: 20px; }
+    .hero-card {
+      border: 0;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at top right, rgba(57, 112, 255, 0.12), transparent 35%),
+        linear-gradient(135deg, #ffffff, #f7f9ff);
+      box-shadow: 0 18px 40px rgba(32, 62, 114, 0.08);
+    }
+    .soft-card {
+      border: 1px solid rgba(218, 226, 239, 0.9);
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: 0 12px 28px rgba(35, 54, 89, 0.06);
+    }
+    .section-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.75rem; }
+    .metric-card { min-height: 98px; border-radius: 18px; border: 1px solid var(--line); background: #fff; padding: 14px 16px; }
+    .metric-label { color: var(--muted); font-size: 0.86rem; }
+    .metric-value { font-size: 1.8rem; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+    .metric-desc { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+    .small-muted { color: var(--muted); font-size: 0.88rem; }
+    .status-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 0.82rem; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot-available { background: var(--available-border); }
+    .dot-reserved { background: var(--reserved-border); }
+    .dot-fixed { background: var(--fixed-border); }
+    .dot-maintenance { background: var(--maintenance-border); }
+    .filter-pill.active, .time-shortcut.active { background: #1f5eff !important; color: #fff !important; border-color: #1f5eff !important; }
+    .floor-scroll { max-height: 820px; overflow: auto; padding-right: 4px; }
+    .floor-plan { display: grid; grid-template-columns: repeat(2, minmax(560px, 1fr)); gap: 18px; min-width: 1180px; }
+    .zone-card { border: 1px solid var(--line); border-radius: 18px; padding: 16px; background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%); position: relative; overflow: hidden; }
+    .zone-card::after { content: ""; position: absolute; inset: auto -30px -40px auto; width: 160px; height: 160px; border-radius: 50%; background: rgba(69, 118, 255, 0.05); pointer-events: none; }
+    .zone-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; position: relative; z-index: 1; }
+    .desk-grid { display: grid; grid-template-columns: repeat(12, minmax(38px, 1fr)); gap: 8px; position: relative; z-index: 1; }
+    .desk { min-height: 48px; border-radius: 12px; border: 1.5px solid var(--line); padding: 5px 4px; text-align: center; cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease; user-select: none; background: #fff; }
+    .desk:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(40, 71, 130, 0.13); }
+    .desk.available { background: var(--available); border-color: var(--available-border); }
+    .desk.reserved { background: var(--reserved); border-color: var(--reserved-border); }
+    .desk.fixed { background: var(--fixed); border-color: var(--fixed-border); }
+    .desk.maintenance { background: var(--maintenance); border-color: var(--maintenance-border); cursor: not-allowed; }
+    .desk.selected { outline: 3px solid rgba(36, 79, 214, 0.18); border-color: var(--selected-border) !important; transform: translateY(-2px); box-shadow: 0 10px 18px rgba(36, 79, 214, 0.16); }
+    .desk-id { font-size: 0.72rem; font-weight: 700; line-height: 1.1; }
+    .desk-mini { margin-top: 2px; font-size: 0.64rem; opacity: 0.8; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .aisle { height: 10px; margin: 12px 0 4px; border-top: 1px dashed #ced7e6; position: relative; z-index: 1; }
+    .detail-kv { display: grid; grid-template-columns: 92px 1fr; gap: 9px; font-size: 0.92rem; padding: 7px 0; border-bottom: 1px dashed #e6ebf3; }
+    .detail-kv:last-child { border-bottom: 0; }
+    .detail-key { color: var(--muted); }
+    .booking-list { max-height: 330px; overflow: auto; }
+    .booking-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; background: #fff; margin-bottom: 10px; }
+    .booking-item:last-child { margin-bottom: 0; }
+    .table thead th { color: var(--muted); font-weight: 700; font-size: 0.88rem; background: #f8faff; white-space: nowrap; }
+    .badge-soft-blue { background: #eaf0ff; color: #365dd8; border: 1px solid #c9d7ff; }
+    .badge-soft-orange { background: #fff0e4; color: #c96b19; border: 1px solid #ffd1ad; }
+    .badge-soft-green { background: #e8f7ed; color: #238355; border: 1px solid #bde6ca; }
+    .badge-soft-gray { background: #f4f5f7; color: #667085; border: 1px solid #d9dee7; }
+    .footer-tip { border-radius: 16px; padding: 14px 16px; background: linear-gradient(135deg, #eff4ff, #fbfdff); border: 1px solid #dbe6ff; }
+    .form-label { font-weight: 600; font-size: 0.92rem; }
+    .btn-rounded { border-radius: 999px; }
+    .empty-hint { border: 1px dashed #cbd6e8; border-radius: 16px; padding: 16px; color: var(--muted); text-align: center; background: #fbfcff; }
+    .desk-tooltip { font-size: 0.78rem; color: var(--muted); }
+    .search-wrap { position: relative; }
+    .search-wrap .form-control { padding-left: 40px; }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #7c8aa5; z-index: 2; }
+    .floor-toolbar { border: 1px solid var(--line); border-radius: 18px; padding: 14px; background: #fbfcff; }
+    .progress { height: 10px; border-radius: 999px; background: #edf2f8; }
+    .progress-bar { border-radius: 999px; }
+    .seat-highlight { animation: pulse-seat 1.5s ease-in-out 2; }
+    .grid-column-full { grid-column: 1 / -1; }
+    @keyframes pulse-seat { 0%, 100% { box-shadow: 0 0 0 rgba(31, 94, 255, 0.0); } 50% { box-shadow: 0 0 0 8px rgba(31, 94, 255, 0.16); } }
+    @media (max-width: 1199px) { .floor-plan { grid-template-columns: 1fr; min-width: 620px; } }
+    @media (max-width: 767px) { .app-shell { padding: 12px; } .desk-grid { grid-template-columns: repeat(8, minmax(38px, 1fr)); } .floor-plan { min-width: 520px; } .metric-value { font-size: 1.5rem; } }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section class="hero-card p-4 p-lg-5 mb-4">
+      <div class="d-flex flex-column flex-xl-row justify-content-between gap-4">
+        <div>
+          <div class="badge text-bg-primary rounded-pill px-3 py-2 mb-3">可交互原型 Demo · 工位预订管理</div>
+          <h1 class="fw-bold mb-2">一层办公区工位预订中心</h1>
+          <p class="mb-0 text-secondary fs-5">面向“固定工位 + 临时可预订工位”混合场景，支持可视化找座、时间段预订、状态联动与现场演示。</p>
+        </div>
+        <div class="d-grid align-content-start gap-2" style="min-width: 270px;">
+          <button class="btn btn-primary btn-lg btn-rounded" id="autoRecommendBtn">智能推荐 3 个相邻空位</button>
+          <button class="btn btn-outline-primary btn-rounded" id="resetDemoBtn">恢复演示初始数据</button>
+          <div class="small-muted text-center">明日演示默认时间窗：2026-05-19 09:00–18:00</div>
+        </div>
+      </div>
+    </section>
+    <section class="row g-3 mb-4" id="metricRow"></section>
+    <section class="row g-4">
+      <div class="col-12 col-xxl-9">
+        <div class="soft-card p-3 p-lg-4 mb-4">
+          <div class="d-flex flex-column flex-xl-row justify-content-between gap-3 mb-3">
+            <div>
+              <div class="section-title mb-1">工位地图与筛选</div>
+              <div class="small-muted">点击工位即可查看详情并预订；不同状态会随查询时间窗动态变化。</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="status-chip"><span class="status-dot dot-available"></span>可预订</span>
+              <span class="status-chip"><span class="status-dot dot-reserved"></span>已预订</span>
+              <span class="status-chip"><span class="status-dot dot-fixed"></span>固定工位</span>
+              <span class="status-chip"><span class="status-dot dot-maintenance"></span>停用维护</span>
+            </div>
+          </div>
+          <div class="floor-toolbar mb-3">
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-lg-3">
+                <label class="form-label">查看日期</label>
+                <input type="date" class="form-control" id="bookingDate">
+              </div>
+              <div class="col-6 col-lg-2">
+                <label class="form-label">开始时间</label>
+                <input type="time" class="form-control" id="startTime">
+              </div>
+              <div class="col-6 col-lg-2">
+                <label class="form-label">结束时间</label>
+                <input type="time" class="form-control" id="endTime">
+              </div>
+              <div class="col-12 col-lg-5">
+                <label class="form-label">快捷时间窗</label>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-outline-primary btn-sm time-shortcut" data-start="09:00" data-end="12:00">上午</button>
+                  <button class="btn btn-outline-primary btn-sm time-shortcut" data-start="13:30" data-end="18:00">下午</button>
+                  <button class="btn btn-outline-primary btn-sm time-shortcut active" data-start="09:00" data-end="18:00">全天</button>
+                  <button class="btn btn-outline-secondary btn-sm" id="refreshMapBtn">刷新地图</button>
+                </div>
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label">搜索工位 / 特征</label>
+                <div class="search-wrap">
+                  <span class="search-icon">⌕</span>
+                  <input type="text" class="form-control" id="deskKeyword" placeholder="如 A-012、靠窗、双屏位">
+                </div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <label class="form-label">区域与状态筛选</label>
+                <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-outline-primary btn-sm filter-pill active" data-zone="ALL">全部区域</button>
+                  <button class="btn btn-outline-primary btn-sm filter-pill" data-zone="A">A 区</button>
+                  <button class="btn btn-outline-primary btn-sm filter-pill" data-zone="B">B 区</button>
+                  <button class="btn btn-outline-primary btn-sm filter-pill" data-zone="C">C 区</button>
+                  <button class="btn btn-outline-primary btn-sm filter-pill" data-zone="D">D 区</button>
+                  <button class="btn btn-outline-success btn-sm status-filter active" data-status="ALL">全部状态</button>
+                  <button class="btn btn-outline-success btn-sm status-filter" data-status="AVAILABLE">仅可订</button>
+                  <button class="btn btn-outline-warning btn-sm status-filter" data-status="RESERVED">仅已订</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="floor-scroll">
+            <div class="floor-plan" id="floorPlan"></div>
+          </div>
+        </div>
+        <div class="soft-card p-3 p-lg-4">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+            <div>
+              <div class="section-title mb-1">当前时间窗预订记录</div>
+              <div class="small-muted">用于演示“谁订了哪里、什么时候占用、是否可取消”。</div>
+            </div>
+            <div class="small-muted align-self-lg-center" id="bookingCountText"></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead>
+                <tr><th>工位</th><th>预订人</th><th>部门</th><th>时间</th><th>用途</th><th>状态</th><th class="text-end">操作</th></tr>
+              </thead>
+              <tbody id="bookingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xxl-3">
+        <div class="soft-card p-3 p-lg-4 mb-4">
+          <div class="section-title">已选工位</div>
+          <div id="deskDetailPanel" class="empty-hint">点击左侧地图中的任意工位，这里会展示工位详情与可预订性。</div>
+        </div>
+        <div class="soft-card p-3 p-lg-4 mb-4">
+          <div class="section-title">预订表单</div>
+          <form id="bookingForm">
+            <div class="mb-3"><label class="form-label">预订工位</label><input type="text" class="form-control" id="selectedDeskInput" placeholder="请先选择工位" readonly></div>
+            <div class="mb-3"><label class="form-label">姓名</label><input type="text" class="form-control" id="bookerName" placeholder="如：张三"></div>
+            <div class="mb-3"><label class="form-label">部门 / 来访团队</label><input type="text" class="form-control" id="bookerDept" placeholder="如：产品部、上海项目组"></div>
+            <div class="mb-3"><label class="form-label">联系邮箱</label><input type="email" class="form-control" id="bookerEmail" placeholder="name@company.com"></div>
+            <div class="mb-3"><label class="form-label">使用说明</label><select class="form-select" id="bookingPurpose"><option value="来访办公">来访办公</option><option value="项目驻场">项目驻场</option><option value="跨部门协作">跨部门协作</option><option value="临时补位">临时补位</option></select></div>
+            <div class="mb-3"><label class="form-label">备注</label><textarea class="form-control" id="bookingNote" rows="2" placeholder="如：希望靠近会议室、需要双屏位"></textarea></div>
+            <button type="submit" class="btn btn-primary w-100 btn-rounded" id="submitBookingBtn">确认预订</button>
+          </form>
+          <div class="alert alert-info mt-3 mb-0 small" id="formHint">预订时间直接沿用地图上方的当前查询时间窗。</div>
+        </div>
+        <div class="soft-card p-3 p-lg-4">
+          <div class="section-title">演示亮点</div>
+          <div class="booking-list">
+            <div class="booking-item"><div class="fw-semibold mb-1">1. 固定 + 流动工位并存</div><div class="small-muted">既能标注长期归属工位，也能开放一部分热座供出差人员预约。</div></div>
+            <div class="booking-item"><div class="fw-semibold mb-1">2. 时间范围防冲突</div><div class="small-muted">同一工位在冲突时间段自动显示“已预订”，避免重复分配。</div></div>
+            <div class="booking-item"><div class="fw-semibold mb-1">3. 地图优先的管理视角</div><div class="small-muted">适合行政、人事或前台快速查空位、现场讲解与安排访客。</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="footer-tip mt-4"><div class="fw-bold mb-1">可用于正式系统的后续扩展</div><div class="small-muted">后端可继续接入：楼层/区域维护、审批流、组织架构、二维码签到、超时释放、访客预约、统计报表、Excel 导入工位清单等。</div></section>
+  </div>
+  <script>
+    const DEMO_DATE = "2026-05-19";
+    const STORAGE_KEY = "desk-booking-demo-reservations-v1";
+    const INIT_SEED_KEY = "desk-booking-demo-seeded-v1";
+    const zoneMeta = {
+      A: { name: "A 区 · 靠窗办公带", desc: "适合临时访客与短期驻场团队" },
+      B: { name: "B 区 · 中央协作带", desc: "靠近会议室与茶水区" },
+      C: { name: "C 区 · 固定团队带", desc: "以固定员工工位为主" },
+      D: { name: "D 区 · 弹性扩展带", desc: "预留高峰日与项目组集中使用" }
+    };
+    const desks = [];
+    const features = ["靠窗", "近会议室", "近茶水区", "双屏位", "安静角落", "普通位"];
+    function pad(num, size = 3) { return String(num).padStart(size, "0"); }
+    function buildDesks() {
+      const counts = { A: 72, B: 72, C: 72, D: 72 };
+      Object.entries(counts).forEach(([zone, count]) => {
+        for (let i = 1; i <= count; i++) {
+          let type = "RESERVABLE";
+          let baseState = "AVAILABLE";
+          if (zone === "C" && i <= 46) type = "FIXED";
+          if (zone === "A" && i <= 16) type = "FIXED";
+          if (zone === "B" && i <= 20) type = "FIXED";
+          if (zone === "D" && i <= 10) type = "FIXED";
+          if ((zone === "A" && [57, 58].includes(i)) || (zone === "B" && [49, 50, 51].includes(i)) || (zone === "D" && [65, 66].includes(i))) { type = "MAINTENANCE"; baseState = "MAINTENANCE"; }
+          const id = `${zone}-${pad(i)}`;
+          const feature = features[(i + zone.charCodeAt(0)) % features.length];
+          const areaTag = i <= 24 ? "北侧" : i <= 48 ? "中段" : "南侧";
+          desks.push({ id, zone, sequence: i, type, baseState, feature, areaTag, power: i % 3 === 0 ? "含扩展坞" : "标准供电", monitor: feature === "双屏位" ? "双显示器" : "单显示器/自带设备", remark: type === "FIXED" ? "固定员工工位，不支持普通预订" : type === "MAINTENANCE" ? "设备维护或暂不开放" : "支持按时间范围提前预订" });
+        }
+      });
+    }
+    buildDesks();
+    const initialReservations = [
+      { id: "R001", deskId: "A-022", name: "王莉", dept: "南京项目组", email: "wangli@company.com", start: "2026-05-19T09:00", end: "2026-05-19T18:00", purpose: "项目驻场", note: "需要靠窗位置" },
+      { id: "R002", deskId: "A-034", name: "陈俊", dept: "华东销售", email: "chenjun@company.com", start: "2026-05-19T09:30", end: "2026-05-19T12:00", purpose: "来访办公", note: "" },
+      { id: "R003", deskId: "A-041", name: "赵琪", dept: "总部财务", email: "zhaoqi@company.com", start: "2026-05-19T13:30", end: "2026-05-19T18:00", purpose: "跨部门协作", note: "" },
+      { id: "R004", deskId: "B-026", name: "孙航", dept: "交付中心", email: "sunhang@company.com", start: "2026-05-19T09:00", end: "2026-05-19T17:30", purpose: "项目驻场", note: "靠近会议室" },
+      { id: "R005", deskId: "B-031", name: "林瑶", dept: "北京访客", email: "linyao@company.com", start: "2026-05-19T10:00", end: "2026-05-19T16:00", purpose: "来访办公", note: "" },
+      { id: "R006", deskId: "B-043", name: "周明", dept: "市场部", email: "zhouming@company.com", start: "2026-05-19T09:00", end: "2026-05-19T12:00", purpose: "临时补位", note: "" },
+      { id: "R007", deskId: "D-017", name: "胡宁", dept: "研发联调组", email: "huning@company.com", start: "2026-05-19T09:00", end: "2026-05-19T18:00", purpose: "项目驻场", note: "" },
+      { id: "R008", deskId: "D-024", name: "李哲", dept: "外地培训组", email: "lizhe@company.com", start: "2026-05-19T09:00", end: "2026-05-19T15:00", purpose: "来访办公", note: "" },
+      { id: "R009", deskId: "D-033", name: "郑雯", dept: "人力资源部", email: "zhengwen@company.com", start: "2026-05-19T14:00", end: "2026-05-19T18:00", purpose: "跨部门协作", note: "" },
+      { id: "R010", deskId: "A-026", name: "许磊", dept: "产品团队", email: "xulei@company.com", start: "2026-05-19T09:00", end: "2026-05-19T11:30", purpose: "临时补位", note: "" },
+      { id: "R011", deskId: "B-027", name: "方悦", dept: "客户成功", email: "fangyue@company.com", start: "2026-05-19T13:30", end: "2026-05-19T18:00", purpose: "来访办公", note: "" },
+      { id: "R012", deskId: "D-041", name: "马程", dept: "区域运营", email: "macheng@company.com", start: "2026-05-19T09:30", end: "2026-05-19T18:00", purpose: "项目驻场", note: "" }
+    ];
+    let reservations = [];
+    let selectedDeskId = null;
+    let currentZone = "ALL";
+    let currentStatus = "ALL";
+    let recommendedDeskIds = [];
+    const elements = {
+      metricRow: document.getElementById("metricRow"), floorPlan: document.getElementById("floorPlan"), bookingDate: document.getElementById("bookingDate"), startTime: document.getElementById("startTime"), endTime: document.getElementById("endTime"), refreshMapBtn: document.getElementById("refreshMapBtn"), deskKeyword: document.getElementById("deskKeyword"), deskDetailPanel: document.getElementById("deskDetailPanel"), selectedDeskInput: document.getElementById("selectedDeskInput"), bookingForm: document.getElementById("bookingForm"), bookerName: document.getElementById("bookerName"), bookerDept: document.getElementById("bookerDept"), bookerEmail: document.getElementById("bookerEmail"), bookingPurpose: document.getElementById("bookingPurpose"), bookingNote: document.getElementById("bookingNote"), submitBookingBtn: document.getElementById("submitBookingBtn"), formHint: document.getElementById("formHint"), bookingTableBody: document.getElementById("bookingTableBody"), bookingCountText: document.getElementById("bookingCountText"), autoRecommendBtn: document.getElementById("autoRecommendBtn"), resetDemoBtn: document.getElementById("resetDemoBtn")
+    };
+    function seedDemoData(force = false) { const alreadySeeded = localStorage.getItem(INIT_SEED_KEY); if (!alreadySeeded || force) { localStorage.setItem(STORAGE_KEY, JSON.stringify(initialReservations)); localStorage.setItem(INIT_SEED_KEY, "1"); } reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    seedDemoData();
+    function saveReservations() { localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations)); }
+    function getWindow() { const date = elements.bookingDate.value || DEMO_DATE; const startTime = elements.startTime.value || "09:00"; const endTime = elements.endTime.value || "18:00"; return { start: new Date(`${date}T${startTime}`), end: new Date(`${date}T${endTime}`), startText: `${date}T${startTime}`, endText: `${date}T${endTime}`, date, startTime, endTime }; }
+    function isValidWindow() { const w = getWindow(); return w.start < w.end; }
+    function overlaps(aStart, aEnd, bStart, bEnd) { return aStart < bEnd && bStart < aEnd; }
+    function getDeskReservation(deskId) { const w = getWindow(); return reservations.find(item => item.deskId === deskId && overlaps(new Date(item.start), new Date(item.end), w.start, w.end)); }
+    function getDeskRuntimeStatus(desk) { if (desk.type === "FIXED") return "FIXED"; if (desk.type === "MAINTENANCE") return "MAINTENANCE"; return getDeskReservation(desk.id) ? "RESERVED" : "AVAILABLE"; }
+    function getStatusLabel(status) { return ({ AVAILABLE: "可预订", RESERVED: "已预订", FIXED: "固定工位", MAINTENANCE: "停用维护" })[status] || status; }
+    function getStatusBadge(status) { return ({ AVAILABLE: '<span class="badge badge-soft-green">可预订</span>', RESERVED: '<span class="badge badge-soft-orange">已预订</span>', FIXED: '<span class="badge badge-soft-blue">固定</span>', MAINTENANCE: '<span class="badge badge-soft-gray">维护</span>' })[status] || ""; }
+    function statusClass(status) { return ({ AVAILABLE: "available", RESERVED: "reserved", FIXED: "fixed", MAINTENANCE: "maintenance" })[status] || ""; }
+    function computeMetrics() { const total = desks.length; const fixed = desks.filter(d => d.type === "FIXED").length; const maintenance = desks.filter(d => d.type === "MAINTENANCE").length; const reservable = total - fixed - maintenance; const reserved = desks.filter(d => getDeskRuntimeStatus(d) === "RESERVED").length; const available = desks.filter(d => getDeskRuntimeStatus(d) === "AVAILABLE").length; const utilization = reservable > 0 ? Math.round((reserved / reservable) * 100) : 0; return { total, fixed, maintenance, reservable, reserved, available, utilization }; }
+    function renderMetrics() { const m = computeMetrics(); elements.metricRow.innerHTML = `<div class="col-6 col-xl-2"><div class="metric-card"><div class="metric-label">总工位</div><div class="metric-value">${m.total}</div><div class="metric-desc">整层办公区</div></div></div><div class="col-6 col-xl-2"><div class="metric-card"><div class="metric-label">固定工位</div><div class="metric-value">${m.fixed}</div><div class="metric-desc">长期归属</div></div></div><div class="col-6 col-xl-2"><div class="metric-card"><div class="metric-label">开放预订</div><div class="metric-value">${m.reservable}</div><div class="metric-desc">热座池</div></div></div><div class="col-6 col-xl-2"><div class="metric-card"><div class="metric-label">当前可订</div><div class="metric-value">${m.available}</div><div class="metric-desc">选中时间窗</div></div></div><div class="col-6 col-xl-2"><div class="metric-card"><div class="metric-label">当前已订</div><div class="metric-value">${m.reserved}</div><div class="metric-desc">避免冲突</div></div></div><div class="col-6 col-xl-2"><div class="metric-card"><div class="metric-label">预订占用率</div><div class="metric-value">${m.utilization}%</div><div class="progress mt-2"><div class="progress-bar" style="width: ${m.utilization}%"></div></div></div></div>`; }
+    function matchesDeskFilter(desk) { const keyword = elements.deskKeyword.value.trim().toLowerCase(); const runtimeStatus = getDeskRuntimeStatus(desk); const zoneOk = currentZone === "ALL" || desk.zone === currentZone; const statusOk = currentStatus === "ALL" || (currentStatus === "AVAILABLE" && runtimeStatus === "AVAILABLE") || (currentStatus === "RESERVED" && runtimeStatus === "RESERVED"); const keywordOk = !keyword || desk.id.toLowerCase().includes(keyword) || desk.feature.toLowerCase().includes(keyword) || desk.areaTag.toLowerCase().includes(keyword) || desk.power.toLowerCase().includes(keyword) || desk.monitor.toLowerCase().includes(keyword); return zoneOk && statusOk && keywordOk; }
+    function renderFloorPlan() { if (!isValidWindow()) { elements.floorPlan.innerHTML = `<div class="alert alert-danger mb-0">结束时间必须晚于开始时间，请重新选择时间范围。</div>`; return; } const grouped = { A: [], B: [], C: [], D: [] }; desks.forEach(d => { if (matchesDeskFilter(d)) grouped[d.zone].push(d); }); elements.floorPlan.innerHTML = Object.entries(grouped).map(([zone, list]) => { const metrics = { available: list.filter(d => getDeskRuntimeStatus(d) === "AVAILABLE").length, reserved: list.filter(d => getDeskRuntimeStatus(d) === "RESERVED").length }; const deskHtml = list.length ? list.map(desk => { const runtimeStatus = getDeskRuntimeStatus(desk); const selected = desk.id === selectedDeskId ? "selected" : ""; const recommend = recommendedDeskIds.includes(desk.id) ? "seat-highlight" : ""; const reservation = getDeskReservation(desk.id); const tip = reservation ? `${desk.id} · ${getStatusLabel(runtimeStatus)} · ${reservation.name}` : `${desk.id} · ${getStatusLabel(runtimeStatus)} · ${desk.feature}`; return `<div class="desk ${statusClass(runtimeStatus)} ${selected} ${recommend}" data-desk-id="${desk.id}" title="${tip}"><div class="desk-id">${desk.id}</div><div class="desk-mini">${runtimeStatus === "RESERVED" ? "已订" : desk.type === "FIXED" ? "固定" : desk.feature}</div></div>`; }).join("") : `<div class="empty-hint grid-column-full">该筛选条件下暂无工位。</div>`; return `<div class="zone-card"><div class="zone-head"><div><div class="fw-bold">${zoneMeta[zone].name}</div><div class="small-muted">${zoneMeta[zone].desc}</div></div><div class="text-end small"><div><span class="badge badge-soft-green">空 ${metrics.available}</span></div><div class="mt-1"><span class="badge badge-soft-orange">订 ${metrics.reserved}</span></div></div></div><div class="desk-grid">${deskHtml}</div><div class="aisle"></div><div class="desk-tooltip">虚线区域可理解为主通道 / 动线分隔。</div></div>`; }).join(""); document.querySelectorAll("[data-desk-id]").forEach(node => node.addEventListener("click", () => selectDesk(node.dataset.deskId))); }
+    function selectDesk(deskId) { selectedDeskId = deskId; renderFloorPlan(); renderDeskDetail(); elements.selectedDeskInput.value = deskId; }
+    function renderDeskDetail() { if (!selectedDeskId) { elements.deskDetailPanel.innerHTML = "点击左侧地图中的任意工位，这里会展示工位详情与可预订性。"; elements.deskDetailPanel.className = "empty-hint"; updateBookingFormState(null, null); return; } const desk = desks.find(d => d.id === selectedDeskId); const status = getDeskRuntimeStatus(desk); const reservation = getDeskReservation(desk.id); elements.deskDetailPanel.className = ""; elements.deskDetailPanel.innerHTML = `<div class="d-flex justify-content-between align-items-start mb-3"><div><div class="h4 fw-bold mb-1">${desk.id}</div><div class="small-muted">${zoneMeta[desk.zone].name}</div></div><div>${getStatusBadge(status)}</div></div><div class="detail-kv"><div class="detail-key">位置</div><div>${desk.areaTag}</div></div><div class="detail-kv"><div class="detail-key">类型</div><div>${desk.type === "RESERVABLE" ? "可预订工位" : desk.type === "FIXED" ? "固定人员工位" : "维护工位"}</div></div><div class="detail-kv"><div class="detail-key">配置</div><div>${desk.feature} · ${desk.monitor}</div></div><div class="detail-kv"><div class="detail-key">供电</div><div>${desk.power}</div></div><div class="detail-kv"><div class="detail-key">说明</div><div>${desk.remark}</div></div>${reservation ? `<div class="alert alert-warning mt-3 mb-0 small">当前时间窗已由 <strong>${reservation.name}</strong>（${reservation.dept}）预订，占用时间：${formatTimeRange(reservation.start, reservation.end)}。</div>` : ""}`; updateBookingFormState(desk, status); }
+    function updateBookingFormState(desk, status) { const disabled = !desk || status !== "AVAILABLE"; [elements.submitBookingBtn, elements.bookerName, elements.bookerDept, elements.bookerEmail, elements.bookingPurpose, elements.bookingNote].forEach(el => el.disabled = disabled); if (!desk) { elements.formHint.className = "alert alert-info mt-3 mb-0 small"; elements.formHint.textContent = "预订时间直接沿用地图上方的当前查询时间窗。"; return; } if (status === "AVAILABLE") { elements.formHint.className = "alert alert-success mt-3 mb-0 small"; elements.formHint.textContent = `该工位在 ${formatWindowText()} 可直接预订。`; } else if (status === "RESERVED") { elements.formHint.className = "alert alert-warning mt-3 mb-0 small"; elements.formHint.textContent = "当前时间窗发生占用冲突，可切换时间后再尝试。"; } else { elements.formHint.className = "alert alert-secondary mt-3 mb-0 small"; elements.formHint.textContent = "该工位不属于普通预订池。"; } }
+    function formatWindowText() { const w = getWindow(); return `${w.date} ${w.startTime}–${w.endTime}`; }
+    function formatTimeRange(start, end) { const s = new Date(start), e = new Date(end); const y = s.getFullYear(); const m = String(s.getMonth() + 1).padStart(2, "0"); const d = String(s.getDate()).padStart(2, "0"); const sh = String(s.getHours()).padStart(2, "0"); const sm = String(s.getMinutes()).padStart(2, "0"); const eh = String(e.getHours()).padStart(2, "0"); const em = String(e.getMinutes()).padStart(2, "0"); return `${y}-${m}-${d} ${sh}:${sm}–${eh}:${em}`; }
+    function getVisibleReservations() { const w = getWindow(); return reservations.filter(item => overlaps(new Date(item.start), new Date(item.end), w.start, w.end)).sort((a, b) => a.deskId.localeCompare(b.deskId)); }
+    function renderBookingTable() { const visible = getVisibleReservations(); elements.bookingCountText.textContent = `当前显示 ${visible.length} 条占用记录`; if (!visible.length) { elements.bookingTableBody.innerHTML = `<tr><td colspan="7"><div class="empty-hint my-2">当前时间窗暂无预订记录。</div></td></tr>`; return; } elements.bookingTableBody.innerHTML = visible.map(item => `<tr><td class="fw-semibold">${item.deskId}</td><td>${item.name}</td><td>${item.dept}</td><td>${formatTimeRange(item.start, item.end)}</td><td>${item.purpose}</td><td><span class="badge badge-soft-orange">已生效</span></td><td class="text-end"><button class="btn btn-sm btn-outline-danger cancel-booking-btn" data-id="${item.id}">取消</button></td></tr>`).join(""); document.querySelectorAll(".cancel-booking-btn").forEach(btn => btn.addEventListener("click", () => cancelBooking(btn.dataset.id))); }
+    function cancelBooking(id) { reservations = reservations.filter(item => item.id !== id); saveReservations(); renderAll(); }
+    function validateBookingForm() { const deskId = elements.selectedDeskInput.value.trim(); const name = elements.bookerName.value.trim(); const dept = elements.bookerDept.value.trim(); const email = elements.bookerEmail.value.trim(); if (!deskId) return "请先选择一个可预订工位。"; if (!name) return "请填写预订人姓名。"; if (!dept) return "请填写部门或来访团队。"; if (!email || !email.includes("@")) return "请填写有效邮箱。"; if (!isValidWindow()) return "结束时间必须晚于开始时间。"; const desk = desks.find(d => d.id === deskId); if (!desk || getDeskRuntimeStatus(desk) !== "AVAILABLE") return "当前工位在该时间窗不可预订，请重新选择。"; return ""; }
+    function handleBookingSubmit(event) { event.preventDefault(); const error = validateBookingForm(); if (error) { alert(error); return; } const w = getWindow(); const item = { id: `R${Date.now()}`, deskId: elements.selectedDeskInput.value.trim(), name: elements.bookerName.value.trim(), dept: elements.bookerDept.value.trim(), email: elements.bookerEmail.value.trim(), start: w.startText, end: w.endText, purpose: elements.bookingPurpose.value, note: elements.bookingNote.value.trim() }; reservations.push(item); saveReservations(); alert(`预订成功：${item.deskId} · ${formatWindowText()}`); elements.bookingForm.reset(); elements.selectedDeskInput.value = item.deskId; renderAll(); selectDesk(item.deskId); }
+    function bindFilterEvents() { document.querySelectorAll(".filter-pill").forEach(btn => btn.addEventListener("click", () => { document.querySelectorAll(".filter-pill").forEach(b => b.classList.remove("active")); btn.classList.add("active"); currentZone = btn.dataset.zone; renderFloorPlan(); })); document.querySelectorAll(".status-filter").forEach(btn => btn.addEventListener("click", () => { document.querySelectorAll(".status-filter").forEach(b => b.classList.remove("active")); btn.classList.add("active"); currentStatus = btn.dataset.status; renderFloorPlan(); })); document.querySelectorAll(".time-shortcut").forEach(btn => btn.addEventListener("click", () => { document.querySelectorAll(".time-shortcut").forEach(b => b.classList.remove("active")); btn.classList.add("active"); elements.startTime.value = btn.dataset.start; elements.endTime.value = btn.dataset.end; renderAll(); })); }
+    function recommendAdjacentDesks() { if (!isValidWindow()) { alert("请先设置有效的查询时间窗。"); return; } const zones = currentZone === "ALL" ? ["A", "B", "C", "D"] : [currentZone]; for (const zone of zones) { const candidates = desks.filter(d => d.zone === zone && d.type === "RESERVABLE" && getDeskRuntimeStatus(d) === "AVAILABLE"); for (let i = 0; i < candidates.length - 2; i++) { const a = candidates[i], b = candidates[i + 1], c = candidates[i + 2]; if (b.sequence === a.sequence + 1 && c.sequence === b.sequence + 1) { recommendedDeskIds = [a.id, b.id, c.id]; renderFloorPlan(); selectDesk(a.id); alert(`已找到相邻空位：${recommendedDeskIds.join("、")}`); return; } } } alert("当前筛选范围内没有找到 3 个连续可用工位。"); }
+    function resetDemo() { if (!confirm("确认恢复到演示初始数据吗？新增和取消的预订将被重置。")) return; seedDemoData(true); selectedDeskId = null; recommendedDeskIds = []; elements.bookingDate.value = DEMO_DATE; elements.startTime.value = "09:00"; elements.endTime.value = "18:00"; elements.deskKeyword.value = ""; currentZone = "ALL"; currentStatus = "ALL"; document.querySelectorAll(".filter-pill").forEach(btn => btn.classList.toggle("active", btn.dataset.zone === "ALL")); document.querySelectorAll(".status-filter").forEach(btn => btn.classList.toggle("active", btn.dataset.status === "ALL")); document.querySelectorAll(".time-shortcut").forEach(btn => btn.classList.toggle("active", btn.dataset.start === "09:00" && btn.dataset.end === "18:00")); elements.bookingForm.reset(); elements.selectedDeskInput.value = ""; renderAll(); }
+    function renderAll() { renderMetrics(); renderFloorPlan(); renderDeskDetail(); renderBookingTable(); }
+    function init() { elements.bookingDate.value = DEMO_DATE; elements.startTime.value = "09:00"; elements.endTime.value = "18:00"; bindFilterEvents(); elements.refreshMapBtn.addEventListener("click", renderAll); elements.deskKeyword.addEventListener("input", renderFloorPlan); elements.bookingDate.addEventListener("change", renderAll); elements.startTime.addEventListener("change", renderAll); elements.endTime.addEventListener("change", renderAll); elements.bookingForm.addEventListener("submit", handleBookingSubmit); elements.autoRecommendBtn.addEventListener("click", recommendAdjacentDesks); elements.resetDemoBtn.addEventListener("click", resetDemo); renderAll(); }
+    init();
+  </script>
+</body>
+</html>

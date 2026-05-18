@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能工位管理系统</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-light: #e8f0fe;
+    --accent: #0ea5e9;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #8b5cf6;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --sidebar-w: 240px;
+    --header-h: 64px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    height: var(--header-h);
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 17px; color: var(--primary);
+    letter-spacing: -.3px;
+  }
+  .logo .icon-wrap {
+    width: 36px; height: 36px;
+    background: var(--primary);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px;
+  }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .date-badge {
+    background: var(--bg);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
+  /* ── Layout ── */
+  .app-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: #fff;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    flex-shrink: 0;
+  }
+  .nav-section-label {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted); letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 20px 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    color: var(--text-muted);
+    font-size: 14px; font-weight: 400;
+    cursor: pointer;
+    border-radius: 0;
+    transition: all .15s;
+    border-left: 3px solid transparent;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 500;
+    border-left-color: var(--primary);
+  }
+  .nav-item i { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--primary);
+    color: #fff;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .sidebar-footer .user-info { display: flex; align-items: center; gap: 10px; }
+  .sidebar-footer .user-name { font-weight: 500; color: var(--text); font-size: 14px; }
+  .sidebar-footer .user-role { font-size: 12px; }
+
+  /* ── Main Content ── */
+  .main-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Pages ── */
+  .page { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+  .page.active { display: flex; }
+
+  .page-header {
+    padding: 20px 28px 0;
+    flex-shrink: 0;
+  }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--text); }
+  .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Dashboard Page ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px 28px;
+    flex-shrink: 0;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex; align-items: center; gap: 14px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .stat-label { font-size: 12px; color: var(--text-muted); }
+  .stat-value { font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1.2; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .dashboard-bottom {
+    flex: 1; overflow: hidden;
+    padding: 0 28px 20px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title { font-size: 14px; font-weight: 600; }
+  .panel-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+  /* ── Booking List ── */
+  .booking-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .booking-item:last-child { border-bottom: none; }
+  .seat-tag {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .booking-info { flex: 1; min-width: 0; }
+  .booking-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .booking-time { font-size: 12px; color: var(--text-muted); }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  /* ── Map Page ── */
+  .map-toolbar {
+    padding: 16px 28px;
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+  }
+  .map-wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 0 28px 20px;
+  }
+  .map-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    min-height: 520px;
+    position: relative;
+  }
+
+  /* Zone labels */
+  .zone-label {
+    font-size: 12px; font-weight: 600;
+    color: var(--text-muted); letter-spacing: .5px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .zone-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--border);
+  }
+
+  .seats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .seat {
+    width: 52px; height: 52px;
+    border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all .15s;
+    border: 2px solid transparent;
+    position: relative;
+    user-select: none;
+  }
+  .seat:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+  .seat .seat-icon { font-size: 16px; margin-bottom: 2px; }
+  .seat.available {
+    background: #ecfdf5; color: var(--success);
+    border-color: #a7f3d0;
+  }
+  .seat.occupied {
+    background: #fef2f2; color: var(--danger);
+    border-color: #fecaca;
+  }
+  .seat.fixed {
+    background: #eff6ff; color: var(--primary);
+    border-color: #bfdbfe;
+  }
+  .seat.my-booking {
+    background: #f0fdf4; color: #16a34a;
+    border-color: var(--success);
+    box-shadow: 0 0 0 2px rgba(16,185,129,.2);
+  }
+  .seat.selected {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(26,86,219,.25) !important;
+    transform: translateY(-2px) scale(1.05);
+  }
+  .seat.unavailable {
+    background: #f8fafc; color: #cbd5e1;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+  }
+  .seat.unavailable:hover { transform: none; box-shadow: none; }
+
+  /* Aisle */
+  .aisle { width: 28px; flex-shrink: 0; }
+
+  /* ── Map side panel ── */
+  .map-layout {
+    flex: 1; overflow: hidden;
+    display: flex; gap: 16px;
+    padding: 0 28px 20px;
+  }
+  .map-main { flex: 1; overflow: auto; }
+  .map-side {
+    width: 280px; flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 12px;
+    overflow-y: auto;
+  }
+
+  /* ── Booking Page ── */
+  .booking-page-wrap {
+    flex: 1; overflow-y: auto;
+    padding: 20px 28px;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .form-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .form-section-title {
+    font-size: 14px; font-weight: 600; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px; color: var(--text);
+  }
+  .form-section-title i { color: var(--primary); }
+
+  /* date picker row */
+  .date-quick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .date-chip {
+    padding: 6px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px; cursor: pointer;
+    transition: all .15s;
+    background: #fff;
+  }
+  .date-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .date-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Booking summary */
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    position: sticky; top: 0;
+  }
+  .summary-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 8px; padding: 16px 18px; margin-bottom: 18px; color: #fff;
+  }
+  .summary-header .seat-big {
+    font-size: 28px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .summary-row:last-of-type { border-bottom: none; }
+  .summary-row .label { color: var(--text-muted); }
+  .summary-row .value { font-weight: 500; }
+
+  /* ── My Bookings Page ── */
+  .my-bookings-wrap {
+    flex: 1; overflow-y: auto;
+    padding: 20px 28px;
+  }
+  .booking-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 16px;
+    transition: box-shadow .15s;
+  }
+  .booking-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+  .booking-card-seat {
+    width: 56px; height: 56px;
+    background: var(--primary-light);
+    border-radius: 10px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .booking-card-seat .zone { font-size: 10px; color: var(--primary); font-weight: 600; }
+  .booking-card-seat .num { font-size: 18px; font-weight: 700; color: var(--primary); font-family: 'JetBrains Mono', monospace; }
+  .booking-card-info { flex: 1; }
+  .booking-card-title { font-weight: 600; font-size: 15px; }
+  .booking-card-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .booking-card-actions { display: flex; gap: 8px; }
+
+  /* Status badges */
+  .badge-confirmed { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+  .badge-pending { background: #fffbeb; color: var(--warning); border: 1px solid #fde68a; }
+  .badge-cancelled { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+
+  /* ── Notification toast ── */
+  .toast-wrap {
+    position: fixed; top: 80px; right: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .toast-msg {
+    background: #1e293b; color: #fff;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    animation: slideIn .25s ease;
+    pointer-events: all;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(60px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .toast-msg.success i { color: var(--success); }
+  .toast-msg.error i { color: var(--danger); }
+  .toast-msg.info i { color: var(--accent); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+    animation: fadeIn .2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    width: 420px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    animation: popUp .25s ease;
+  }
+  @keyframes popUp {
+    from { transform: scale(.92) translateY(16px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .info-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .info-row:last-of-type { border-bottom: none; }
+  .info-row .k { color: var(--text-muted); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+  /* Facility icons */
+  .facility-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--bg); color: var(--text-muted);
+    font-size: 11px; padding: 3px 8px; border-radius: 20px;
+    margin: 3px 2px 0;
+  }
+
+  /* Progress bar */
+  .usage-bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .usage-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+
+  .btn-primary-custom {
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary-custom:hover { background: #1648c5; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,86,219,.3); }
+
+  .btn-outline-custom {
+    background: transparent; color: var(--text-muted);
+    border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 9px 16px;
+    font-size: 13px; cursor: pointer;
+    transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-outline-custom:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* mini bar chart */
+  .mini-chart { display: flex; align-items: flex-end; gap: 4px; height: 48px; }
+  .mini-bar { flex: 1; border-radius: 3px 3px 0 0; transition: height .4s ease; }
+
+  @media (max-width: 1100px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-bottom { grid-template-columns: 1fr; }
+    .map-layout { flex-direction: column; }
+    .map-side { width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .booking-page-wrap { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <div class="logo">
+    <div class="icon-wrap"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+    智能工位系统
+  </div>
+  <div class="header-right">
+    <span class="date-badge" id="liveClock">2025-01-15 09:30</span>
+    <button class="btn-primary-custom" onclick="showPage('booking')">
+      <i class="bi bi-plus-lg"></i> 快速预订
+    </button>
+    <div class="position-relative">
+      <button class="btn-outline-custom" style="padding:9px 12px">
+        <i class="bi bi-bell" style="font-size:15px"></i>
+      </button>
+      <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid #fff"></span>
+    </div>
+    <div class="avatar" title="张明">张</div>
+  </div>
+</header>
+
+<div class="app-body">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="nav-section-label">导航</div>
+    <a class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <i class="bi bi-speedometer2"></i> 总览仪表盘
+    </a>
+    <a class="nav-item" onclick="showPage('map')" id="nav-map">
+      <i class="bi bi-map"></i> 工位地图
+    </a>
+    <a class="nav-item" onclick="showPage('booking')" id="nav-booking">
+      <i class="bi bi-calendar-plus"></i> 预订工位
+    </a>
+    <a class="nav-item" onclick="showPage('mybookings')" id="nav-mybookings">
+      <i class="bi bi-calendar-check"></i> 我的预订
+      <span class="nav-badge">3</span>
+    </a>
+    <div class="nav-section-label" style="margin-top:8px">管理</div>
+    <a class="nav-item" onclick="showPage('admin')">
+      <i class="bi bi-people"></i> 人员管理
+    </a>
+    <a class="nav-item">
+      <i class="bi bi-bar-chart"></i> 使用统计
+    </a>
+    <a class="nav-item">
+      <i class="bi bi-gear"></i> 系统设置
+    </a>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar" style="width:30px;height:30px;font-size:12px">张</div>
+        <div>
+          <div class="user-name">张明</div>
+          <div class="user-role">系统管理员</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- ══════════════════ DASHBOARD PAGE ══════════════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">工位概览</div>
+        <div class="page-sub">今日实时工位使用情况 · 2025年1月15日 星期三</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#eff6ff;color:var(--primary)"><i class="bi bi-grid-3x3-gap"></i></div>
+          <div>
+            <div class="stat-label">总工位数</div>
+            <div class="stat-value">268</div>
+            <div class="stat-sub">A/B/C 三区</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#ecfdf5;color:var(--success)"><i class="bi bi-check-circle"></i></div>
+          <div>
+            <div class="stat-label">可用工位</div>
+            <div class="stat-value" style="color:var(--success)">84</div>
+            <div class="stat-sub">可立即预订</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef2f2;color:var(--danger)"><i class="bi bi-person-fill"></i></div>
+          <div>
+            <div class="stat-label">已使用</div>
+            <div class="stat-value" style="color:var(--danger)">142</div>
+            <div class="stat-sub">含固定+预订</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fffbeb;color:var(--warning)"><i class="bi bi-clock-history"></i></div>
+          <div>
+            <div class="stat-label">今日预订</div>
+            <div class="stat-value" style="color:var(--warning)">23</div>
+            <div class="stat-sub">+5 待审批</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-bottom">
+        <!-- Left: zone usage -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="bi bi-layers me-2" style="color:var(--primary)"></i>区域使用率</span>
+            <button class="btn-outline-custom" onclick="showPage('map')" style="padding:5px 12px;font-size:12px">
+              <i class="bi bi-map"></i> 查看地图
+            </button>
+          </div>
+          <div class="panel-body">
+            <div style="margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:500">A区 · 研发中心</span>
+                <span style="font-size:13px;font-weight:600;color:var(--danger)">78%</span>
+              </div>
+              <div class="usage-bar"><div class="usage-fill" style="width:78%;background:var(--danger)"></div></div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">已用 70 / 共 90 个工位 · 固定 45 · 可预订 25</div>
+            </div>
+            <div style="margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:500">B区 · 产品设计</span>
+                <span style="font-size:13px;font-weight:600;color:var(--warning)">61%</span>
+              </div>
+              <div class="usage-bar"><div class="usage-fill" style="width:61%;background:var(--warning)"></div></div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">已用 67 / 共 110 个工位 · 固定 32 · 可预订 35</div>
+            </div>
+            <div style="margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:500">C区 · 会客/出差</span>
+                <span style="font-size:13px;font-weight:600;color:var(--success)">37%</span>
+              </div>
+              <div class="usage-bar"><div class="usage-fill" style="width:37%;background:var(--success)"></div></div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">已用 25 / 共 68 个工位 · 均为可预订</div>
+            </div>
+
+            <div style="border-top:1px solid var(--border);padding-top:16px">
+              <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text-muted)">本周每日预订量</div>
+              <div style="display:flex;align-items:flex-end;gap:10px;height:60px">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="flex:1;width:100%;background:var(--primary-light);border-radius:3px 3px 0 0;min-height:18px;height:65%"></div>
+                  <span style="font-size:11px;color:var(--text-muted)">周一</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="flex:1;width:100%;background:var(--primary-light);border-radius:3px 3px 0 0;height:88%"></div>
+                  <span style="font-size:11px;color:var(--text-muted)">周二</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="flex:1;width:100%;background:var(--primary);border-radius:3px 3px 0 0;height:100%"></div>
+                  <span style="font-size:11px;color:var(--primary);font-weight:600">今天</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="flex:1;width:100%;background:var(--border);border-radius:3px 3px 0 0;height:45%"></div>
+                  <span style="font-size:11px;color:var(--text-muted)">周四</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="flex:1;width:100%;background:var(--border);border-radius:3px 3px 0 0;height:30%"></div>
+                  <span style="font-size:11px;color:var(--text-muted)">周五</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: recent bookings -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="bi bi-clock-history me-2" style="color:var(--warning)"></i>最新预订</span>
+            <button class="btn-outline-custom" onclick="showPage('mybookings')" style="padding:5px 12px;font-size:12px">全部</button>
+          </div>
+          <div class="panel-body" style="padding:0 16px">
+            <div id="recentList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ MAP PAGE ══════════════════ -->
+    <div class="page" id="page-map">
+      <div class="page-header">
+        <div class="page-title">工位地图</div>
+        <div class="page-sub">点击工位查看详情 · 绿色可预订 · 蓝色固定分配 · 红色已占用</div>
+      </div>
+
+      <div class="map-toolbar">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1">
+          <div class="legend-item"><div class="legend-dot" style="background:#a7f3d0"></div>可预订</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#fecaca"></div>已占用</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#bfdbfe"></div>固定工位</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#86efac"></div>我的预订</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e2e8f0"></div>维护中</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <select class="form-select form-select-sm" style="width:120px;font-size:13px" id="zoneFilter" onchange="filterZone()">
+            <option value="all">全部区域</option>
+            <option value="A">A区</option>
+            <option value="B">B区</option>
+            <option value="C">C区</option>
+          </select>
+          <button class="btn-outline-custom" style="padding:5px 12px;font-size:13px" onclick="showPage('booking')">
+            <i class="bi bi-calendar-plus"></i> 预订选中工位
+          </button>
+        </div>
+      </div>
+
+      <div class="map-layout">
+        <div class="map-main">
+          <div class="map-container" id="seatMapContainer">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+        <div class="map-side">
+          <!-- Seat detail panel -->
+          <div class="panel" id="seatDetailPanel" style="display:none">
+            <div class="panel-header">
+              <span class="panel-title"><i class="bi bi-info-circle me-2" style="color:var(--primary)"></i>工位详情</span>
+              <span id="detailStatusBadge" class="badge">-</span>
+            </div>
+            <div class="panel-body" id="seatDetailBody" style="padding:16px"></div>
+          </div>
+          <div class="panel" id="seatDetailPlaceholder">
+            <div class="panel-body" style="text-align:center;padding:40px 20px;color:var(--text-muted)">
+              <i class="bi bi-cursor" style="font-size:32px;margin-bottom:12px;display:block"></i>
+              <div style="font-size:14px">点击地图上的工位<br>查看详细信息</div>
+            </div>
+          </div>
+          <!-- Stats mini card -->
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">今日快照</span></div>
+            <div class="panel-body" style="padding:12px 16px">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:20px;font-weight:700;color:var(--success);font-family:'JetBrains Mono',monospace">84</div>
+                  <div style="font-size:11px;color:var(--text-muted)">可预订</div>
+                </div>
+                <div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:20px;font-weight:700;color:var(--danger);font-family:'JetBrains Mono',monospace">142</div>
+                  <div style="font-size:11px;color:var(--text-muted)">已使用</div>
+                </div>
+                <div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:20px;font-weight:700;color:var(--primary);font-family:'JetBrains Mono',monospace">108</div>
+                  <div style="font-size:11px;color:var(--text-muted)">固定工位</div>
+                </div>
+                <div style="text-align:center;padding:10px;background:var(--bg);border-radius:8px">
+                  <div style="font-size:20px;font-weight:700;color:var(--purple);font-family:'JetBrains Mono',monospace">23</div>
+                  <div style="font-size:11px;color:var(--text-muted)">今日预订</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ BOOKING PAGE ══════════════════ -->
+    <div class="page" id="page-booking">
+      <div class="page-header">
+        <div class="page-title">预订工位</div>
+        <div class="page-sub">选择日期、时段和工位完成预订</div>
+      </div>
+
+      <div class="booking-page-wrap">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Step 1: Date -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-calendar3"></i> 第一步：选择日期</div>
+            <div class="date-quick" id="dateChips">
+              <div class="date-chip active" onclick="selectDateChip(this,'今天')">今天</div>
+              <div class="date-chip" onclick="selectDateChip(this,'明天')">明天</div>
+              <div class="date-chip" onclick="selectDateChip(this,'后天')">后天</div>
+              <div class="date-chip" onclick="selectDateChip(this,'本周五')">本周五</div>
+            </div>
+            <div class="time-grid">
+              <div>
+                <label class="form-label" style="font-size:12px;color:var(--text-muted)">开始日期</label>
+                <input type="date" class="form-control form-control-sm" id="startDate" value="2025-01-15" onchange="updateSummary()">
+              </div>
+              <div>
+                <label class="form-label" style="font-size:12px;color:var(--text-muted)">结束日期</label>
+                <input type="date" class="form-control form-control-sm" id="endDate" value="2025-01-15" onchange="updateSummary()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Time -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-clock"></i> 第二步：选择时段</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="timePresets">
+              <div class="date-chip active" onclick="selectTimePreset(this,'09:00','18:00')">全天 09:00–18:00</div>
+              <div class="date-chip" onclick="selectTimePreset(this,'09:00','12:00')">上午</div>
+              <div class="date-chip" onclick="selectTimePreset(this,'13:00','18:00')">下午</div>
+              <div class="date-chip" onclick="selectTimePreset(this,'09:00','13:00')">上午+午餐</div>
+            </div>
+            <div class="time-grid">
+              <div>
+                <label class="form-label" style="font-size:12px;color:var(--text-muted)">开始时间</label>
+                <select class="form-select form-select-sm" id="startTime" onchange="updateSummary()">
+                  <option>08:00</option><option>09:00" selected>09:00</option>
+                  <option>10:00</option><option>11:00</option><option>12:00</option>
+                  <option>13:00</option><option>14:00</option><option>15:00</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size:12px;color:var(--text-muted)">结束时间</label>
+                <select class="form-select form-select-sm" id="endTime" onchange="updateSummary()">
+                  <option>12:00</option><option>13:00</option>
+                  <option>17:00</option><option selected>18:00</option>
+                  <option>19:00</option><option>20:00</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Seat -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-grid-3x3-gap"></i> 第三步：选择工位</div>
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <select class="form-select form-select-sm" style="width:130px" id="bookingZone" onchange="renderBookingSeats()">
+                <option value="C">C区（推荐）</option>
+                <option value="A">A区</option>
+                <option value="B">B区</option>
+              </select>
+              <input type="text" class="form-control form-control-sm" placeholder="搜索工位号…" id="seatSearch" oninput="filterBookingSeats()">
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+              <i class="bi bi-info-circle me-1"></i>绿色为可用工位，点击选择
+            </div>
+            <div id="bookingSeatGrid" style="display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;padding:4px"></div>
+          </div>
+
+          <!-- Extra -->
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-chat-dots"></i> 备注（选填）</div>
+            <textarea class="form-control" rows="2" placeholder="如：带显示器、靠窗…" id="bookingNote" style="font-size:13px"></textarea>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div>
+          <div class="summary-card">
+            <div class="summary-header">
+              <div style="font-size:12px;opacity:.8;margin-bottom:4px">已选工位</div>
+              <div class="seat-big" id="summarySeats">— 未选择 —</div>
+              <div style="font-size:12px;opacity:.8;margin-top:4px" id="summaryZone">请从左侧选择工位</div>
+            </div>
+
+            <div class="summary-row">
+              <span class="label"><i class="bi bi-calendar3 me-2"></i>预订日期</span>
+              <span class="value" id="summaryDate">2025-01-15</span>
+            </div>
+            <div class="summary-row">
+              <span class="label"><i class="bi bi-clock me-2"></i>使用时段</span>
+              <span class="value" id="summaryTime">09:00 – 18:00</span>
+            </div>
+            <div class="summary-row">
+              <span class="label"><i class="bi bi-person me-2"></i>预订人</span>
+              <span class="value">张明</span>
+            </div>
+            <div class="summary-row">
+              <span class="label"><i class="bi bi-building me-2"></i>所在区域</span>
+              <span class="value" id="summaryZoneText">C区</span>
+            </div>
+
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn-primary-custom w-100 justify-content-center" onclick="confirmBooking()" style="padding:12px">
+                <i class="bi bi-check-lg"></i> 确认预订
+              </button>
+              <button class="btn-outline-custom w-100 justify-content-center" onclick="clearBooking()">
+                <i class="bi bi-x-lg"></i> 清空重选
+              </button>
+            </div>
+
+            <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text-muted)">
+              <i class="bi bi-shield-check me-1" style="color:var(--success)"></i>
+              预订成功后将通过企业微信通知确认
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ MY BOOKINGS PAGE ══════════════════ -->
+    <div class="page" id="page-mybookings">
+      <div class="page-header" style="padding-bottom:0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="page-title">我的预订</div>
+            <div class="page-sub">管理您的工位预订记录</div>
+          </div>
+          <button class="btn-primary-custom" onclick="showPage('booking')">
+            <i class="bi bi-plus-lg"></i> 新建预订
+          </button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="date-chip active" onclick="filterBookings('all',this)">全部</button>
+          <button class="date-chip" onclick="filterBookings('confirmed',this)">已确认</button>
+          <button class="date-chip" onclick="filterBookings('pending',this)">待审批</button>
+          <button class="date-chip" onclick="filterBookings('cancelled',this)">已取消</button>
+        </div>
+      </div>
+      <div class="my-bookings-wrap" id="myBookingsList" style="padding-top:16px"></div>
+    </div>
+
+    <!-- ══════════════════ ADMIN PAGE ══════════════════ -->
+    <div class="page" id="page-admin">
+      <div class="page-header">
+        <div class="page-title">人员管理</div>
+        <div class="page-sub">固定工位分配与出差人员管理</div>
+      </div>
+      <div style="padding:20px 28px;overflow-y:auto;flex:1">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title"><i class="bi bi-person-badge me-2" style="color:var(--primary)"></i>固定工位分配</span>
+            <button class="btn-primary-custom" style="padding:6px 14px;font-size:13px" onclick="showToast('功能开发中…','info')">
+              <i class="bi bi-plus-lg"></i> 添加分配
+            </button>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <table class="table table-hover mb-0" style="font-size:13px">
+              <thead style="background:var(--bg)">
+                <tr>
+                  <th style="padding:12px 20px;font-weight:600;color:var(--text-muted);border:none">姓名</th>
+                  <th style="padding:12px 20px;font-weight:600;color:var(--text-muted);border:none">部门</th>
+                  <th style="padding:12px 20px;font-weight:600;color:var(--text-muted);border:none">工位</th>
+                  <th style="padding:12px 20px;font-weight:600;color:var(--text-muted);border:none">类型</th>
+                  <th style="padding:12px 20px;font-weight:600;color:var(--text-muted);border:none">操作</th>
+                </tr>
+              </thead>
+              <tbody id="adminTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Modal -->
+<div id="seatModal" class="modal-overlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal-box" id="modalBox">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="modal-title" id="modalTitle">工位详情</div>
+      <button onclick="document.getElementById('seatModal').style.display='none'" style="background:none;border:none;font-size:20px;color:var(--text-muted);cursor:pointer">&times;</button>
+    </div>
+    <div class="modal-sub" id="modalSub"></div>
+    <div id="modalContent"></div>
+    <div style="display:flex;gap:8px;margin-top:20px" id="modalActions"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+// ══════════════════════════════════════
+// DATA
+// ══════════════════════════════════════
+const ZONES = {
+  A: { name: 'A区 · 研发中心', rows: 3, cols: 12 },
+  B: { name: 'B区 · 产品设计', rows: 3, cols: 14 },
+  C: { name: 'C区 · 出差/访客', rows: 2, cols: 10 }
+};
+
+// Per-zone seat data: status = available | occupied | fixed | my_booking | unavailable
+function genSeats(zone, rows, cols) {
+  const patterns = {
+    A: { fixed: [1,2,3,4,5,6,8,9,10,13,14,15,16,17,18,19,20,25,26,27,28,29], occupied: [7,11,12,21,22,23,24], my_booking: [], unavailable: [30] },
+    B: { fixed: [1,2,3,4,7,8,9,10,11,12,15,16,17,18,19,23,24,25,26], occupied: [5,6,13,14,20,21,22,27], my_booking: [28], unavailable: [] },
+    C: { fixed: [], occupied: [3,7,11], my_booking: [5,12], unavailable: [20] }
+  };
+  const p = patterns[zone] || { fixed:[], occupied:[], my_booking:[], unavailable:[] };
+  const seats = [];
+  for (let i = 1; i <= rows * cols; i++) {
+    let status = 'available';
+    if (p.unavailable.includes(i)) status = 'unavailable';
+    else if (p.my_booking.includes(i)) status = 'my_booking';
+    else if (p.fixed.includes(i)) status = 'fixed';
+    else if (p.occupied.includes(i)) status = 'occupied';
+    seats.push({ id: `${zone}-${String(i).padStart(2,'0')}`, zone, num: i, status });
+  }
+  return seats;
+}
+
+const allSeats = [
+  ...genSeats('A', 3, 12),
+  ...genSeats('B', 3, 14),
+  ...genSeats('C', 2, 10)
+];
+
+let selectedSeat = null;
+let bookingSelectedSeat = null;
+
+const myBookingsData = [
+  { id: 1, seat: 'B-28', zone: 'B区', date: '2025-01-15', time: '09:00 – 18:00', status: 'confirmed', note: '需要双屏显示器' },
+  { id: 2, seat: 'C-05', zone: 'C区', date: '2025-01-16', time: '09:00 – 18:00', status: 'confirmed', note: '' },
+  { id: 3, seat: 'C-12', zone: 'C区', date: '2025-01-17', time: '09:00 – 18:00', status: 'pending', note: '出差人员：李伟' },
+  { id: 4, seat: 'A-07', zone: 'A区', date: '2025-01-10', time: '13:00 – 18:00', status: 'cancelled', note: '' },
+];
+
+const recentBookings = [
+  { user: '李伟', seat: 'C-03', time: '今天 09:00', dept: '上海研发' },
+  { user: '王芳', seat: 'B-12', time: '今天 09:00', dept: '产品部' },
+  { user: '赵强', seat: 'C-08', time: '今天 13:00', dept: '北京运营' },
+  { user: '刘洋', seat: 'C-14', time: '明天 09:00', dept: '深圳销售' },
+  { user: '陈静', seat: 'B-21', time: '明天 09:00', dept: '设计部' },
+  { user: '孙博', seat: 'C-02', time: '后天 09:00', dept: '成都研发' },
+];
+
+const adminData = [
+  { name: '张明', dept: '研发中心', seat: 'A-01', type: '固定' },
+  { name: '李娜', dept: '研发中心', seat: 'A-02', type: '固定' },
+  { name: '王磊', dept: '产品设计', seat: 'B-01', type: '固定' },
+  { name: '陈红', dept: '产品设计', seat: 'B-07', type: '固定' },
+  { name: '刘杰', dept: '研发中心', seat: 'A-08', type: '固定' },
+  { name: '赵晴', dept: '产品设计', seat: 'B-15', type: '固定' },
+];
+
+const facilities = {
+  default: ['电源插座', '网线接口'],
+  window: ['电源插座', '网线接口', '靠窗'],
+  dual: ['双屏支持', '电源插座', '网线接口'],
+  standing: ['站立办公桌', '电源插座'],
+};
+
+// ══════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('page-' + name);
+  if (pg) pg.classList.add('active');
+  const nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  if (name === 'map') renderSeatMap();
+  if (name === 'mybookings') renderMyBookings('all');
+  if (name === 'admin') renderAdmin();
+  if (name === 'booking') renderBookingSeats();
+}
+
+// ══════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('liveClock').textContent =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ══════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════
+function renderRecentList() {
+  const colors = ['#10b981','#10b981','#f59e0b','#f59e0b','#1a56db','#1a56db'];
+  document.getElementById('recentList').innerHTML = recentBookings.map((b,i) => `
+    <div class="booking-item">
+      <span class="seat-tag">${b.seat}</span>
+      <div class="booking-info">
+        <div class="booking-name">${b.user} <span style="font-weight:400;color:var(--text-muted)">· ${b.dept}</span></div>
+        <div class="booking-time">${b.time}</div>
+      </div>
+      <div class="status-dot" style="background:${colors[i]}"></div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// SEAT MAP
+// ══════════════════════════════════════
+const statusConfig = {
+  available:   { cls: 'available',   icon: '🪑', label: '可预订' },
+  occupied:    { cls: 'occupied',    icon: '👤', label: '已占用' },
+  fixed:       { cls: 'fixed',       icon: '🔒', label: '固定工位' },
+  my_booking:  { cls: 'my-booking',  icon: '✅', label: '我的预订' },
+  unavailable: { cls: 'unavailable', icon: '🔧', label: '维护中' },
+};
+
+function renderSeatMap(filterZoneVal) {
+  const container = document.getElementById('seatMapContainer');
+  container.innerHTML = '';
+  const zones = filterZoneVal && filterZoneVal !== 'all' ? [filterZoneVal] : ['A','B','C'];
+  zones.forEach(z => {
+    const cfg = ZONES[z];
+    const seats = allSeats.filter(s => s.zone === z);
+    const label = document.createElement('div');
+    label.className = 'zone-label';
+    label.innerHTML = `<i class="bi bi-grid me-1"></i>${cfg.name}`;
+    container.appendChild(label);
+    const grid = document.createElement('div');
+    grid.className = 'seats-grid';
+    seats.forEach((seat, idx) => {
+      if (idx > 0 && idx % cfg.cols === Math.floor(cfg.cols/2)) {
+        const aisle = document.createElement('div');
+        aisle.className = 'aisle';
+        grid.appendChild(aisle);
+      }
+      const sc = statusConfig[seat.status] || statusConfig.available;
+      const el = document.createElement('div');
+      el.className = `seat ${sc.cls}`;
+      el.innerHTML = `<span class="seat-icon">${sc.icon}</span>${seat.id}`;
+      el.title = `${seat.id} · ${sc.label}`;
+      el.dataset.id = seat.id;
+      el.addEventListener('click', () => onSeatClick(seat, el));
+      if (selectedSeat && selectedSeat.id === seat.id) el.classList.add('selected');
+      grid.appendChild(el);
+    });
+    container.appendChild(grid);
+  });
+}
+
+function filterZone() {
+  renderSeatMap(document.getElementById('zoneFilter').value);
+}
+
+function onSeatClick(seat, el) {
+  selectedSeat = seat;
+  document.querySelectorAll('.seat').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  showSeatDetail(seat);
+}
+
+function showSeatDetail(seat) {
+  const panel = document.getElementById('seatDetailPanel');
+  const placeholder = document.getElementById('seatDetailPlaceholder');
+  const body = document.getElementById('seatDetailBody');
+  const badge = document.getElementById('detailStatusBadge');
+  placeholder.style.display = 'none';
+  panel.style.display = 'flex';
+
+  const sc = statusConfig[seat.status];
+  const badgeColors = {
+    available: 'badge-confirmed', occupied: 'badge-cancelled',
+    fixed: 'bg-primary text-white border-0', my_booking: 'badge-confirmed',
+    unavailable: 'bg-secondary text-white border-0'
+  };
+  badge.className = `badge ${badgeColors[seat.status] || 'bg-secondary'}`;
+  badge.style.cssText = seat.status==='fixed'?'background:var(--primary-light);color:var(--primary);border:1px solid var(--primary)':'';
+  badge.textContent = sc.label;
+
+  const fac = seat.num % 5 === 0 ? facilities.standing :
+              seat.num % 4 === 0 ? facilities.dual :
+              seat.num % 3 === 0 ? facilities.window : facilities.default;
+
+  const fixedUser = adminData.find(a => a.seat === seat.id);
+  const extraInfo = seat.status === 'fixed' && fixedUser
+    ? `<div class="info-row"><span class="k">分配人员</span><span style="font-weight:500">${fixedUser.name} · ${fixedUser.dept}</span></div>`
+    : seat.status === 'my_booking'
+    ? `<div class="info-row"><span class="k">预订人</span><span style="font-weight:500">张明（本人）</span></div>`
+    : '';
+
+  body.innerHTML = `
+    <div style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:4px">${seat.id}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">${ZONES[seat.zone].name}</div>
+    ${extraInfo}
+    <div class="info-row"><span class="k">区域位置</span><span>${seat.zone}区 第${Math.ceil(seat.num/ZONES[seat.zone].cols)}排</span></div>
+    <div class="info-row"><span class="k">设备配置</span></div>
+    <div style="margin-bottom:14px">${fac.map(f=>`<span class="facility-tag"><i class="bi bi-check2"></i>${f}</span>`).join('')}</div>
+    ${seat.status === 'available' ? `
+    <button class="btn-primary-custom w-100 justify-content-center" onclick="bookFromMap('${seat.id}')">
+      <i class="bi bi-calendar-plus"></i> 立即预订此工位
+    </button>` : seat.status === 'my_booking' ? `
+    <button class="btn-outline-custom w-100 justify-content-center" onclick="cancelFromMap('${seat.id}');showPage('mybookings')">
+      <i class="bi bi-x-circle"></i> 取消我的预订
+    </button>` : ''}
+  `;
+}
+
+function bookFromMap(seatId) {
+  const seat = allSeats.find(s => s.id === seatId);
+  if (!seat) return;
+  bookingSelectedSeat = seat;
+  showPage('booking');
+  updateSummary();
+  setTimeout(() => {
+    renderBookingSeats();
+    highlightBookingSeat(seatId);
+  }, 100);
+}
+
+function cancelFromMap(seatId) {
+  showToast(`已取消工位 ${seatId} 的预订`, 'info');
+  const seat = allSeats.find(s => s.id === seatId);
+  if (seat) seat.status = 'available';
+}
+
+// ══════════════════════════════════════
+// BOOKING
+// ══════════════════════════════════════
+function renderBookingSeats(zone) {
+  zone = zone || document.getElementById('bookingZone').value || 'C';
+  const grid = document.getElementById('bookingSeatGrid');
+  const seats = allSeats.filter(s => s.zone === zone);
+  grid.innerHTML = seats.map(seat => {
+    const sc = statusConfig[seat.status];
+    const disabled = seat.status !== 'available';
+    const isSelected = bookingSelectedSeat && bookingSelectedSeat.id === seat.id;
+    return `<div class="seat ${sc.cls} ${disabled?'':''}${isSelected?' selected':''}"
+      style="width:46px;height:46px;font-size:9px;${disabled?'opacity:.6;cursor:not-allowed':''}"
+      onclick="${disabled?'':'selectBookingSeat(\''+seat.id+'\')'}">
+      <span class="seat-icon" style="font-size:14px">${sc.icon}</span>${seat.id}
+    </div>`;
+  }).join('');
+}
+
+function selectBookingSeat(id) {
+  const seat = allSeats.find(s => s.id === id);
+  if (!seat || seat.status !== 'available') return;
+  bookingSelectedSeat = seat;
+  renderBookingSeats();
+  updateSummary();
+  document.getElementById('summarySeats').textContent = id;
+  document.getElementById('summaryZone').textContent = ZONES[seat.zone].name;
+  document.getElementById('summaryZoneText').textContent = seat.zone + '区';
+}
+
+function highlightBookingSeat(id) {
+  bookingSelectedSeat = allSeats.find(s => s.id === id);
+  renderBookingSeats();
+  updateSummary();
+}
+
+function filterBookingSeats() {
+  const q = document.getElementById('seatSearch').value.toUpperCase();
+  document.querySelectorAll('#bookingSeatGrid .seat').forEach(el => {
+    el.style.display = !q || el.textContent.includes(q) ? '' : 'none';
+  });
+}
+
+function selectDateChip(el, label) {
+  document.querySelectorAll('#dateChips .date-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const d = new Date();
+  if (label==='明天') d.setDate(d.getDate()+1);
+  if (label==='后天') d.setDate(d.getDate()+2);
+  if (label==='本周五') { const day=d.getDay(); d.setDate(d.getDate()+(5-day+7)%7); }
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('startDate').value = fmt(d);
+  document.getElementById('endDate').value = fmt(d);
+  updateSummary();
+}
+
+function selectTimePreset(el, start, end) {
+  document.querySelectorAll('#timePresets .date-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('startTime').value = start;
+  document.getElementById('endTime').value = end;
+  updateSummary();
+}
+
+function updateSummary() {
+  const sd = document.getElementById('startDate').value;
+  const ed = document.getElementById('endDate').value;
+  const st = document.getElementById('startTime').value;
+  const et = document.getElementById('endTime').value;
+  document.getElementById('summaryDate').textContent = sd === ed ? sd : `${sd} ~ ${ed}`;
+  document.getElementById('summaryTime').textContent = `${st} – ${et}`;
+  if (bookingSelectedSeat) {
+    document.getElementById('summarySeats').textContent = bookingSelectedSeat.id;
+    document.getElementById('summaryZone').textContent = ZONES[bookingSelectedSeat.zone].name;
+    document.getElementById('summaryZoneText').textContent = bookingSelectedSeat.zone + '区';
+  }
+}
+
+function confirmBooking() {
+  if (!bookingSelectedSeat) {
+    showToast('请先选择一个工位', 'error');
+    return;
+  }
+  const sd = document.getElementById('startDate').value;
+  const st = document.getElementById('startTime').value;
+  const et = document.getElementById('endTime').value;
+  // Mark seat as my_booking
+  bookingSelectedSeat.status = 'my_booking';
+  myBookingsData.unshift({
+    id: Date.now(), seat: bookingSelectedSeat.id,
+    zone: bookingSelectedSeat.zone + '区',
+    date: sd, time: `${st} – ${et}`,
+    status: 'confirmed',
+    note: document.getElementById('bookingNote').value
+  });
+  showToast(`工位 ${bookingSelectedSeat.id} 预订成功！`, 'success');
+  bookingSelectedSeat = null;
+  renderBookingSeats();
+  document.getElementById('summarySeats').textContent = '— 未选择 —';
+  document.getElementById('summaryZone').textContent = '请从左侧选择工位';
+  document.getElementById('bookingNote').value = '';
+  setTimeout(() => showPage('mybookings'), 1200);
+}
+
+function clearBooking() {
+  bookingSelectedSeat = null;
+  renderBookingSeats();
+  document.getElementById('summarySeats').textContent = '— 未选择 —';
+  document.getElementById('summaryZone').textContent = '请从左侧选择工位';
+  document.getElementById('seatSearch').value = '';
+}
+
+// ══════════════════════════════════════
+// MY BOOKINGS
+// ══════════════════════════════════════
+let currentFilter = 'all';
+function renderMyBookings(filter) {
+  currentFilter = filter;
+  const list = filter === 'all' ? myBookingsData : myBookingsData.filter(b => b.status === filter);
+  const statusMap = {
+    confirmed: ['badge-confirmed','已确认','bi-check-circle'],
+    pending:   ['badge-pending','待审批','bi-hourglass-split'],
+    cancelled: ['badge-cancelled','已取消','bi-x-circle'],
+  };
+  document.getElementById('myBookingsList').innerHTML = list.length ? list.map(b => {
+    const [cls, label, icon] = statusMap[b.status] || statusMap.confirmed;
+    const parts = b.seat.split('-');
+    return `
+    <div class="booking-card" id="bcard-${b.id}">
+      <div class="booking-card-seat">
+        <div class="zone">${b.zone}</div>
+        <div class="num">${parts[1]||b.seat}</div>
+      </div>
+      <div class="booking-card-info">
+        <div class="booking-card-title">${b.seat} · ${b.zone}</div>
+        <div class="booking-card-meta"><i class="bi bi-calendar3 me-1"></i>${b.date} &nbsp;<i class="bi bi-clock me-1"></i>${b.time}</div>
+        ${b.note ? `<div class="booking-card-meta" style="margin-top:3px"><i class="bi bi-chat-dots me-1"></i>${b.note}</div>` : ''}
+      </div>
+      <span class="badge ${cls}" style="align-self:flex-start;font-size:12px;padding:4px 10px">
+        <i class="bi ${icon} me-1"></i>${label}
+      </span>
+      <div class="booking-card-actions">
+        ${b.status !== 'cancelled' ? `<button class="btn-outline-custom" style="padding:6px 12px;font-size:12px" onclick="cancelBooking(${b.id})"><i class="bi bi-x-lg"></i> 取消</button>` : ''}
+        <button class="btn-outline-custom" style="padding:6px 12px;font-size:12px" onclick="viewBookingDetail(${b.id})"><i class="bi bi-eye"></i></button>
+      </div>
+    </div>`;
+  }).join('') : `<div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+    <i class="bi bi-calendar-x" style="font-size:40px;margin-bottom:12px;display:block"></i>
+    <div>暂无${filter==='all'?'':'相关'}预订记录</div>
+  </div>`;
+}
+
+function filterBookings(status, el) {
+  document.querySelectorAll('.my-bookings-wrap + .page-header .date-chip, #page-mybookings .date-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderMyBookings(status);
+}
+
+function cancelBooking(id) {
+  const b = myBookingsData.find(x => x.id === id);
+  if (!b) return;
+  b.status = 'cancelled';
+  // restore seat
+  const seat = allSeats.find(s => s.id === b.seat);
+  if (seat && seat.status === 'my_booking') seat.status = 'available';
+  renderMyBookings(currentFilter);
+  showToast(`已取消工位 ${b.seat} 的预订`, 'info');
+}
+
+function viewBookingDetail(id) {
+  const b = myBookingsData.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('modalTitle').textContent = `预订详情 · ${b.seat}`;
+  document.getElementById('modalSub').textContent = `${b.zone} · ${b.date}`;
+  document.getElementById('modalContent').innerHTML = `
+    <div class="info-row"><span class="k">工位编号</span><span style="font-weight:600;font-family:'JetBrains Mono',monospace">${b.seat}</span></div>
+    <div class="info-row"><span class="k">区域</span><span>${b.zone}</span></div>
+    <div class="info-row"><span class="k">日期</span><span>${b.date}</span></div>
+    <div class="info-row"><span class="k">时段</span><span>${b.time}</span></div>
+    <div class="info-row"><span class="k">状态</span><span>${{confirmed:'✅ 已确认',pending:'⏳ 待审批',cancelled:'❌ 已取消'}[b.status]}</span></div>
+    ${b.note ? `<div class="info-row"><span class="k">备注</span><span>${b.note}</span></div>` : ''}
+  `;
+  document.getElementById('modalActions').innerHTML = `
+    <button class="btn-outline-custom flex-1 justify-content-center" onclick="document.getElementById('seatModal').style.display='none'">关闭</button>
+    ${b.status !== 'cancelled' ? `<button class="btn-primary-custom flex-1 justify-content-center" onclick="cancelBooking(${b.id});document.getElementById('seatModal').style.display='none'"><i class="bi bi-x-lg"></i> 取消预订</button>` : ''}
+  `;
+  document.getElementById('seatModal').style.display = 'flex';
+}
+
+// ══════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════
+function renderAdmin() {
+  document.getElementById('adminTable').innerHTML = adminData.map(d => `
+    <tr>
+      <td style="padding:12px 20px;vertical-align:middle">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--primary)">${d.name[0]}</div>
+          ${d.name}
+        </div>
+      </td>
+      <td style="padding:12px 20px;vertical-align:middle;color:var(--text-muted)">${d.dept}</td>
+      <td style="padding:12px 20px;vertical-align:middle"><span class="seat-tag">${d.seat}</span></td>
+      <td style="padding:12px 20px;vertical-align:middle"><span class="badge" style="background:var(--primary-light);color:var(--primary);padding:4px 10px">${d.type}</span></td>
+      <td style="padding:12px 20px;vertical-align:middle">
+        <div style="display:flex;gap:6px">
+          <button class="btn-outline-custom" style="padding:4px 10px;font-size:12px" onclick="showToast('编辑功能开发中…','info')"><i class="bi bi-pencil"></i></button>
+          <button class="btn-outline-custom" style="padding:4px 10px;font-size:12px;color:var(--danger);border-color:var(--danger)" onclick="showToast('请谨慎操作','error')"><i class="bi bi-trash"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+function showToast(msg, type='success') {
+  const icons = { success:'bi-check-circle-fill', error:'bi-x-circle-fill', info:'bi-info-circle-fill' };
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.innerHTML = `<i class="bi ${icons[type]||icons.success}"></i>${msg}`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 3000);
+}
+
+// ══════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════
+function closeModal(e) {
+  if (e.target.id === 'seatModal') document.getElementById('seatModal').style.display = 'none';
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+renderRecentList();
+updateSummary();
+</script>
+</body>
+</html>
