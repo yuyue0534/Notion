@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>甘特图排期 · 独立任务拖拽演示</title>
+<style>
+  :root{
+    --ink:#16213e;
+    --ink-2:#233359;
+    --ink-3:#2f4270;
+    --paper:#eceef3;
+    --paper-2:#f5f6f9;
+    --line:rgba(22,33,62,0.10);
+    --line-strong:rgba(22,33,62,0.22);
+    --today:#d64550;
+    --danger:#c0392b;
+    --text:#1b2440;
+    --text-dim:#6b7385;
+    --font-display: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, "Courier New", monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--text);
+    font-family:var(--font-display);
+    -webkit-font-smoothing:antialiased;
+  }
+  body.dragging, body.dragging *{ cursor:grabbing !important; user-select:none !important; }
+
+  #app{ max-width:1220px; margin:0 auto; padding:22px 22px 40px; }
+
+  header.top{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px; margin-bottom:6px; gap:16px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:4px; }
+  .brand .eyebrow{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.14em;
+    color:var(--text-dim); text-transform:uppercase;
+  }
+  .brand h1{ margin:0; font-size:22px; font-weight:700; letter-spacing:.02em; }
+  .toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .btn{
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.05em;
+    border:none; padding:8px 14px; border-radius:3px; cursor:pointer;
+  }
+  .btn-add{ background:var(--ink); color:#fff; }
+  .btn-add:hover{ background:var(--ink-3); }
+  .btn-reset{ background:transparent; color:var(--text-dim); border:1px solid var(--line-strong); }
+  .btn-reset:hover{ color:var(--text); border-color:var(--text-dim); }
+
+  .hint{
+    font-family:var(--font-mono); font-size:11.5px; color:var(--text-dim);
+    margin:10px 2px 16px; display:flex; gap:18px; flex-wrap:wrap;
+  }
+  .hint b{ color:var(--text); font-weight:600; }
+
+  .workspace{
+    display:flex; align-items:flex-start; gap:0;
+    border:1px solid var(--line-strong);
+    background:var(--paper-2);
+    overflow-x:auto;
+    position:relative;
+  }
+
+  /* ---- left task list ---- */
+  .task-list{ flex:0 0 240px; width:240px; border-right:1px solid var(--line-strong); }
+  .tl-header{
+    height:46px; display:flex; align-items:center; padding:0 14px;
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.1em;
+    color:var(--text-dim); text-transform:uppercase;
+    border-bottom:1px solid var(--line-strong);
+    background:var(--paper);
+  }
+  .tl-row{
+    height:52px; display:flex; align-items:center; gap:8px;
+    padding:0 10px 0 14px; border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .tl-row .info{ flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center; }
+  .tl-row .name{
+    font-size:13.5px; font-weight:600; outline:none; border-radius:2px;
+    padding:1px 3px; margin:-1px -3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tl-row .name:hover{ background:rgba(22,33,62,0.05); }
+  .tl-row .name:focus{ background:#fff; box-shadow:0 0 0 1.5px var(--ink-3); text-overflow:clip; overflow:visible; }
+  .tl-row .dates{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); margin-top:2px; }
+  .tl-row .del-btn{
+    flex:0 0 auto; width:22px; height:22px; border-radius:4px; border:none;
+    background:transparent; color:var(--text-dim); cursor:pointer; font-size:14px;
+    line-height:1; opacity:0; transition:opacity .12s ease, background .12s ease, color .12s ease;
+  }
+  .tl-row:hover .del-btn{ opacity:1; }
+  .tl-row .del-btn:hover{ background:var(--danger); color:#fff; }
+
+  .tl-empty, .grid-empty{
+    padding:28px 14px; font-family:var(--font-mono); font-size:12px; color:var(--text-dim);
+    text-align:center;
+  }
+
+  /* ---- timeline ---- */
+  .timeline{ position:relative; }
+  .tl-dateheader{ height:46px; display:flex; border-bottom:1px solid var(--line-strong); background:var(--paper); position:relative; }
+  .day-cell{ flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; border-right:1px solid var(--line); font-family:var(--font-mono); }
+  .day-cell .dow{ font-size:9px; color:var(--text-dim); }
+  .day-cell .num{ font-size:11px; font-weight:600; }
+  .day-cell.weekend{ background:rgba(22,33,62,0.035); }
+  .day-cell.today .num{ color:var(--today); }
+
+  .grid{ position:relative; }
+  .row-bg{ position:absolute; left:0; right:0; border-bottom:1px solid var(--line); }
+  .row-bg.weekend-col{ background:rgba(22,33,62,0.025); }
+  .col-line{ position:absolute; top:0; bottom:0; width:1px; background:var(--line); }
+  .today-line{ position:absolute; top:0; bottom:0; width:0; border-left:1px dashed var(--today); z-index:5; }
+  .today-line .today-tag{ position:absolute; top:-20px; left:4px; font-family:var(--font-mono); font-size:9.5px; color:var(--today); white-space:nowrap; }
+
+  .task-bar{
+    position:absolute; height:28px; border-radius:4px;
+    background:linear-gradient(180deg, var(--ink-3), var(--ink-2));
+    box-shadow:0 1px 2px rgba(22,33,62,0.3);
+    display:flex; align-items:center;
+    cursor:grab; z-index:7; touch-action:none;
+  }
+  .task-bar:active{ cursor:grabbing; }
+  .task-bar.just-added{ animation:pop .28s ease; }
+  @keyframes pop{ from{ transform:scale(0.9); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .task-bar .bar-label{
+    color:#fff; font-size:11.5px; padding:0 10px; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; pointer-events:none; font-weight:600; letter-spacing:.01em;
+  }
+  .resize-handle{ position:absolute; top:0; bottom:0; width:8px; cursor:ew-resize; z-index:2; }
+  .resize-handle.resize-left{ left:0; border-radius:4px 0 0 4px; }
+  .resize-handle.resize-right{ right:0; border-radius:0 4px 4px 0; }
+  .resize-handle:hover{ background:rgba(255,255,255,0.25); }
+
+  /* ---- right json panel ---- */
+  .json-panel{ flex:0 0 300px; width:300px; border-left:1px solid var(--line-strong); background:var(--ink); color:#dfe3f0; padding:16px; }
+  .json-panel h2{ margin:0 0 4px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; font-family:var(--font-mono); color:#9aa4c4; }
+  .json-panel .sub{ font-size:11px; color:#6f7899; margin-bottom:12px; font-family:var(--font-mono); }
+  .json-panel pre{ margin:0; font-family:var(--font-mono); font-size:11.5px; line-height:1.6; white-space:pre-wrap; word-break:break-all; max-height:560px; overflow:auto; }
+  .json-panel pre::-webkit-scrollbar{ width:6px; }
+  .json-panel pre::-webkit-scrollbar-thumb{ background:#3a4468; border-radius:3px; }
+  .json-key{ color:#8ecdf7; }
+  .json-str{ color:#b7e39a; }
+  .json-num{ color:#f0b26b; }
+  .empty-note{ color:#6f7899; font-family:var(--font-mono); font-size:11.5px; }
+
+  footer.note{ margin-top:12px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Interaction Demo · Standalone Tasks</span>
+      <h1>甘特图排期演示</h1>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-reset" id="resetBtn">重置数据</button>
+      <button class="btn btn-add" id="addBtn">＋ 新建任务</button>
+    </div>
+  </header>
+
+  <div class="hint">
+    <span><b>拖动任务条主体</b> → 整体平移开始/结束日期</span>
+    <span><b>拖动任务条左 / 右边缘</b> → 单独调整开始 / 结束日期</span>
+    <span><b>点击任务名称</b> → 重命名</span>
+    <span><b>悬停行尾 ×</b> → 删除任务</span>
+  </div>
+
+  <div class="workspace" id="workspace">
+    <div class="task-list" id="taskList"></div>
+    <div class="timeline" id="timeline">
+      <div class="tl-dateheader" id="dateHeader"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="json-panel">
+      <h2>Tasks 输出</h2>
+      <div class="sub">拖拽 / 增删改后实时生成</div>
+      <pre id="jsonOut"></pre>
+    </div>
+  </div>
+
+  <footer class="note">坐标换算：dateToX(date) = diffDays(baseDate, date) × CELL_WIDTH（40px/天）— 拖拽像素量按 40px 取整对齐到日期网格</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 配置 ----------
+  const CELL_WIDTH = 40;
+  const ROW_HEIGHT = 52;
+  const NUM_DAYS = 20;
+  const BASE_DATE = new Date(2026, 6, 13); // 2026-07-13 周一
+  const TODAY = new Date(2026, 6, 16);
+  const DOW = ['日','一','二','三','四','五','六'];
+
+  function addDays(d, n){ const r = new Date(d.getTime()); r.setDate(r.getDate()+n); return r; }
+  function diffDays(a, b){ return Math.round((b - a) / 86400000); }
+  function dateToX(d){ return diffDays(BASE_DATE, d) * CELL_WIDTH; }
+  function fmt(d){ return (d.getMonth()+1) + '/' + d.getDate(); }
+  function fmtISO(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function esc(s){ return String(s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  function makeInitialData(){
+    return [
+      { id:'task-001', name:'需求分析',   start:new Date(2026,6,13), end:new Date(2026,6,15) },
+      { id:'task-002', name:'数据库设计', start:new Date(2026,6,15), end:new Date(2026,6,18) },
+      { id:'task-003', name:'UI 设计',    start:new Date(2026,6,14), end:new Date(2026,6,17) },
+      { id:'task-004', name:'前端开发',   start:new Date(2026,6,18), end:new Date(2026,6,23) },
+      { id:'task-005', name:'测试',       start:new Date(2026,6,23), end:new Date(2026,6,26) },
+    ];
+  }
+
+  let tasks = makeInitialData();
+  let taskSeq = 100;
+
+  // ---------- DOM refs ----------
+  const taskListEl = document.getElementById('taskList');
+  const dateHeaderEl = document.getElementById('dateHeader');
+  const gridEl = document.getElementById('grid');
+  const jsonOut = document.getElementById('jsonOut');
+
+  const timelineWidth = NUM_DAYS * CELL_WIDTH;
+
+  // ---------- 静态日期表头（只建一次）----------
+  function buildDateHeader(){
+    dateHeaderEl.style.width = timelineWidth + 'px';
+    let headerHtml = '';
+    for(let i=0;i<NUM_DAYS;i++){
+      const d = addDays(BASE_DATE, i);
+      const isWeekend = d.getDay()===0 || d.getDay()===6;
+      const isToday = sameDay(d, TODAY);
+      headerHtml += `<div class="day-cell ${isWeekend?'weekend':''} ${isToday?'today':''}" style="width:${CELL_WIDTH}px">
+        <span class="dow">周${DOW[d.getDay()]}</span><span class="num">${fmt(d)}</span>
+      </div>`;
+    }
+    dateHeaderEl.innerHTML = headerHtml;
+  }
+
+  // ---------- 结构性重建：任务列表行 + 网格背景 + 任务条（增删/初始化时调用）----------
+  const barEls = {};
+  function buildAll(){
+    const gridHeight = Math.max(tasks.length * ROW_HEIGHT, 1);
+    gridEl.style.width = timelineWidth + 'px';
+    gridEl.style.height = (tasks.length ? gridHeight : 140) + 'px';
+
+    // -- 左侧任务列表 --
+    if(tasks.length === 0){
+      taskListEl.innerHTML = `<div class="tl-header">任务</div><div class="tl-empty">暂无任务<br>点击右上角「＋ 新建任务」添加</div>`;
+    }else{
+      let tlHtml = '<div class="tl-header">任务</div>';
+      tasks.forEach(t=>{
+        tlHtml += `<div class="tl-row" style="height:${ROW_HEIGHT}px" data-id="${t.id}">
+          <div class="info">
+            <div class="name" contenteditable="true" spellcheck="false" data-id="${t.id}">${esc(t.name)}</div>
+            <div class="dates" id="tldate-${t.id}"></div>
+          </div>
+          <button class="del-btn" data-id="${t.id}" title="删除任务">×</button>
+        </div>`;
+      });
+      taskListEl.innerHTML = tlHtml;
+    }
+
+    // -- 网格背景 --
+    if(tasks.length === 0){
+      gridEl.innerHTML = `<div class="grid-empty">拖拽区域为空</div>`;
+    }else{
+      let bg = '';
+      tasks.forEach((t,i)=>{
+        bg += `<div class="row-bg" style="top:${i*ROW_HEIGHT}px;height:${ROW_HEIGHT}px;width:${timelineWidth}px"></div>`;
+      });
+      for(let i=0;i<NUM_DAYS;i++){
+        const d = addDays(BASE_DATE, i);
+        if(d.getDay()===0 || d.getDay()===6){
+          bg += `<div class="row-bg weekend-col" style="left:${i*CELL_WIDTH}px;top:0;width:${CELL_WIDTH}px;height:${gridHeight}px;border-bottom:none;"></div>`;
+        }
+        bg += `<div class="col-line" style="left:${i*CELL_WIDTH}px"></div>`;
+      }
+      const todayOffsetDays = diffDays(BASE_DATE, TODAY);
+      if(todayOffsetDays >=0 && todayOffsetDays < NUM_DAYS){
+        bg += `<div class="today-line" style="left:${dateToX(TODAY)}px;height:${gridHeight}px">
+          <span class="today-tag">今天 ${fmt(TODAY)}</span>
+        </div>`;
+      }
+      gridEl.innerHTML = bg;
+    }
+
+    // -- 任务条 --
+    Object.keys(barEls).forEach(k=>delete barEls[k]);
+    tasks.forEach(t=>{
+      const bar = document.createElement('div');
+      bar.className = 'task-bar';
+      bar.dataset.id = t.id;
+      bar.innerHTML = `
+        <div class="resize-handle resize-left" data-role="resize-left"></div>
+        <span class="bar-label"></span>
+        <div class="resize-handle resize-right" data-role="resize-right"></div>
+      `;
+      gridEl.appendChild(bar);
+      barEls[t.id] = bar;
+      attachBarEvents(bar, t.id);
+    });
+
+    // -- 任务名重命名 & 删除按钮事件 --
+    taskListEl.querySelectorAll('.name').forEach(el=>{
+      el.addEventListener('input', ()=>{
+        const t = tasks.find(x=>x.id===el.dataset.id);
+        if(!t) return;
+        t.name = el.textContent;
+        const bar = barEls[t.id];
+        if(bar) bar.querySelector('.bar-label').textContent = t.name || '未命名任务';
+        renderJson();
+      });
+      el.addEventListener('blur', ()=>{
+        const t = tasks.find(x=>x.id===el.dataset.id);
+        if(!t) return;
+        const trimmed = el.textContent.trim();
+        t.name = trimmed || '未命名任务';
+        el.textContent = t.name;
+        const bar = barEls[t.id];
+        if(bar) bar.querySelector('.bar-label').textContent = t.name;
+        renderJson();
+      });
+      el.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+      });
+    });
+    taskListEl.querySelectorAll('.del-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        tasks = tasks.filter(t=>t.id !== btn.dataset.id);
+        buildAll();
+        renderPositions();
+      });
+    });
+
+    renderPositions();
+  }
+
+  // ---------- 位置渲染（拖拽 / 缩放时高频调用，不重建 DOM 结构）----------
+  function renderPositions(){
+    tasks.forEach(t=>{
+      const bar = barEls[t.id];
+      if(!bar) return;
+      const left = dateToX(t.start);
+      const width = Math.max(dateToX(t.end) - dateToX(t.start), 10);
+      bar.style.left = left + 'px';
+      bar.style.width = width + 'px';
+      bar.querySelector('.bar-label').textContent = t.name;
+
+      const durationDays = diffDays(t.start, t.end);
+      const lastDay = addDays(t.end, -1);
+      bar.title = `${t.name} · ${fmt(t.start)} - ${fmt(lastDay)} (${durationDays}天)`;
+
+      const dateLabel = document.getElementById('tldate-'+t.id);
+      if(dateLabel) dateLabel.textContent = `${fmt(t.start)} – ${fmt(lastDay)} · ${durationDays}天`;
+    });
+    // top 位置按当前数组顺序（即行号）重新计算
+    tasks.forEach((t,i)=>{
+      const bar = barEls[t.id];
+      if(bar) bar.style.top = (i * ROW_HEIGHT + (ROW_HEIGHT-28)/2) + 'px';
+    });
+    renderJson();
+  }
+
+  function renderJson(){
+    if(tasks.length === 0){
+      jsonOut.innerHTML = '<span class="empty-note">// 暂无任务</span>';
+      return;
+    }
+    const lines = tasks.map(t=>{
+      return `  {
+    <span class="json-key">id</span>: <span class="json-str">'${esc(t.id)}'</span>,
+    <span class="json-key">name</span>: <span class="json-str">'${esc(t.name)}'</span>,
+    <span class="json-key">start</span>: <span class="json-str">'${fmtISO(t.start)}'</span>,
+    <span class="json-key">end</span>: <span class="json-str">'${fmtISO(t.end)}'</span>,
+    <span class="json-key">durationDays</span>: <span class="json-num">${diffDays(t.start,t.end)}</span>
+  }`;
+    });
+    jsonOut.innerHTML = '[\n' + lines.join(',\n') + '\n]';
+  }
+
+  // ---------- 拖拽：整体移动 + 边缘缩放 ----------
+  function attachBarEvents(bar, taskId){
+    bar.addEventListener('pointerdown', (e)=>{
+      if(e.target.closest('.resize-handle')) return;
+      startDrag(e, taskId, 'move');
+    });
+    bar.querySelector('[data-role="resize-left"]').addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      startDrag(e, taskId, 'resize-left');
+    });
+    bar.querySelector('[data-role="resize-right"]').addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      startDrag(e, taskId, 'resize-right');
+    });
+  }
+
+  function startDrag(e, taskId, mode){
+    e.preventDefault();
+    const task = tasks.find(t=>t.id===taskId);
+    if(!task) return;
+    const startClientX = e.clientX;
+    const origStart = new Date(task.start);
+    const origEnd = new Date(task.end);
+    document.body.classList.add('dragging');
+    barEls[taskId].style.zIndex = 20;
+
+    function onMove(ev){
+      const deltaPx = ev.clientX - startClientX;
+      const deltaDays = Math.round(deltaPx / CELL_WIDTH);
+
+      if(mode === 'move'){
+        task.start = addDays(origStart, deltaDays);
+        task.end = addDays(origEnd, deltaDays);
+      } else if(mode === 'resize-left'){
+        let newStart = addDays(origStart, deltaDays);
+        const minStartBoundary = addDays(origEnd, -1); // 最短保留 1 天
+        if(newStart > minStartBoundary) newStart = minStartBoundary;
+        task.start = newStart;
+      } else if(mode === 'resize-right'){
+        let newEnd = addDays(origEnd, deltaDays);
+        const minEndBoundary = addDays(origStart, 1);
+        if(newEnd < minEndBoundary) newEnd = minEndBoundary;
+        task.end = newEnd;
+      }
+      renderPositions();
+    }
+    function onUp(){
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      document.body.classList.remove('dragging');
+      barEls[taskId].style.zIndex = '';
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  // ---------- 新建 / 重置 ----------
+  document.getElementById('addBtn').addEventListener('click', ()=>{
+    const lastTask = tasks[tasks.length-1];
+    const start = lastTask ? new Date(lastTask.end) : new Date(TODAY);
+    const end = addDays(start, 2);
+    const id = 'task-' + (taskSeq++);
+    tasks.push({ id, name:'新任务', start, end });
+    buildAll();
+    const bar = barEls[id];
+    if(bar){
+      bar.classList.add('just-added');
+      bar.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' });
+    }
+    const nameEl = taskListEl.querySelector(`.name[data-id="${id}"]`);
+    if(nameEl){
+      nameEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      const range = document.createRange();
+      range.selectNodeContents(nameEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      nameEl.focus();
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    tasks = makeInitialData();
+    buildAll();
+  });
+
+  // ---------- 初始化 ----------
+  buildDateHeader();
+  buildAll();
+
+})();
+</script>
+</body>
+</html>
